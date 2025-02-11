@@ -1,3 +1,6 @@
+"""jkpy configHandler"""
+# jkpy/configHandler.py
+
 import json
 import os
 from pathlib import Path
@@ -7,11 +10,31 @@ from jkpy.jiraHandler import JiraHandler
 from jkpy.utils import clean_folder_path, sys_exit
 
 class ConfigHandler(JiraHandler):
+    """ConfigHandler(JiraHandler)
+    
+    Concrete implementation of the JiraHandler interface.
+    Responsible for adding, removing, updating, and retrieving configurations.
+    """
+
     def handle(self, request):
+        """ConfigHandler(JiraHandler).hanlde(self, request)
+        
+        Concrete implementation of the handle() method from JiraHandler.
+        Checks the request object for each valid configuration to add, remove,
+        or update that configuration. Will pass the request to the next 
+        handler if applicable.
+        
+        There are two categories of configurations:
+        -----
+        1) configurations specific for this application run.
+        2) configurations specific to the application (global).
+        """
+
         request.log("ConfigHandler().handle().")
         if not request.proceed:
             sys_exit(0, request, "request.proceed is False. Exiting.")
         
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
         config: Dict[str, any]=self.get_config(request)
 
         if request.showConfig:

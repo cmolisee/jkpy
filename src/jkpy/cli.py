@@ -1,12 +1,13 @@
 """jkpy cli"""
 # jkpy/cli.py
 
-from jkpy.buildMetricsHandler import BuildMetricsHandler
-from jkpy.buildRequestHandler import BuildRequestHandler
+
 from jkpy.configHandler import ConfigHandler
-from jkpy.httpRequestHandler import HttpRequestHandler
 from jkpy.jiraRequest import JiraRequest
+from jkpy.metricHandler import MetricHandler
+from jkpy.requestHandler import RequestHandler
 from jkpy.resultsHandler import ResultsHandler
+from jkpy.setupHandler import SetupHandler
 from . import __app_name__
 from typing_extensions import Annotated
 import typer
@@ -149,11 +150,13 @@ def main(
 
     request.log("request has been initialized.")
 
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+    
     resultsHandler=ResultsHandler()
-    buildMetricsHandler=BuildMetricsHandler(resultsHandler)
-    httpRequestHandler=HttpRequestHandler(buildMetricsHandler)
-    buildRequestHandler=BuildRequestHandler(httpRequestHandler)
-    configHandler=ConfigHandler(buildRequestHandler)
+    metricHandler=MetricHandler(resultsHandler)
+    requestHandler=RequestHandler(metricHandler)
+    setupHandler=SetupHandler(requestHandler)
+    configHandler=ConfigHandler(setupHandler)
 
     configHandler.handle(request)
 

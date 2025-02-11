@@ -3,9 +3,7 @@
 
 import os
 
-from datetime import date, datetime
 from pathlib import Path
-import re
 import sys
 
 def clean_folder_path(path: str):
@@ -14,31 +12,6 @@ def clean_folder_path(path: str):
         return Path(os.path.dirname(path))
     else:
         return Path(path)
-
-def parse_date(raw: str, m: int, d: int):
-    """Parses a raw start date from cmd args"""
-    parts=raw.split()
-    d=date(date.today().year, m, d)
-
-    for p in parts:
-        if "Y" in p:
-            y=re.Match(p,"\d+").Value.Trim
-
-            if y.isNumeric() and len(y) == 4:
-                d=d.replace(year=int(y))
-        
-        if "M" in p:
-            m=re.Match(p,"\d+").Value.Trim
-
-            if m.isNumeric() and len(m) >= 1:
-                d=d.replace(month=int(m))
-
-        if "D" in p:
-            day=re.Match(p,"\d+").Value.Trim
-
-            if day.isNumeric() and len(day) >= 1:
-                d=d.replace(day=int(day))
-    return d.strftime("%Y-%m-%d")
 
 def sys_exit(code: int, request, log):
     if request:
@@ -49,3 +22,29 @@ def sys_exit(code: int, request, log):
                 for log in request.logs:
                     file.write(log + "\n")
     sys.exit(code)
+
+def has_duplicate(list):
+    """
+    Checks if a list has duplicates.
+    """
+
+    seen=set()
+    duplicates=[]
+    for i in list:
+        if i is not None and i in seen:
+            duplicates.append(i)
+        seen.add(i)
+    return duplicates
+
+def convert_seconds(seconds):
+    """
+    Given seconds return a string for days, hours and minutes
+    """
+    print(f"seconds: {seconds}")
+    print(type(seconds))
+    days = seconds // (24 * 3600)
+    seconds %= (24 * 3600)
+    hours = seconds // 3600
+    seconds %= 3600
+    minutes = seconds // 60
+    return f"{int(days)}Days {int(hours)}Hours {int(minutes)}Minutes"
