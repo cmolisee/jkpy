@@ -82,6 +82,23 @@ def main(
             is_eager=True,
         )
     ]=None,
+    metricLabels: Annotated[
+        str,
+        typer.Option(
+            "--metricLabels",
+            "-ml",
+            help="A Comma separated string specifying labels to run metrics on. If specified, the config file will be updated with metrics on any new labels - else, the config file values are used.",
+            is_eager=True,
+        )
+    ]=None,
+    remove_metricLabels: Annotated[
+        str,
+        typer.Option(
+            "--remove-metricLabels",
+            help="A Comma separated string specifying metric labels to remove from the config.",
+            is_eager=True,
+        )
+    ]=None,
     remove_statusTypes: Annotated[
         str,
         typer.Option(
@@ -140,9 +157,11 @@ def main(
         "teamLabels": teamLabels,
         "nameLabels": nameLabels,
         "statusTypes": statusTypes,
+        "metricLabels": metricLabels,
         "remove_teamLabels": remove_teamLabels,
         "remove_nameLabels": remove_nameLabels,
         "remove_statusTypes": remove_statusTypes,
+        "remove_metricLabels": remove_metricLabels,
         "startDate": startDate,
         "endDate": endDate,
         "showConfig": showConfig

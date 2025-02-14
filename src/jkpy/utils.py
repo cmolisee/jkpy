@@ -1,6 +1,7 @@
 """utilities"""
 #  jkpy/utils.py
 
+from datetime import datetime
 import os
 
 from pathlib import Path
@@ -40,11 +41,22 @@ def convert_seconds(seconds):
     """
     Given seconds return a string for days, hours and minutes
     """
-    print(f"seconds: {seconds}")
-    print(type(seconds))
     days = seconds // (24 * 3600)
     seconds %= (24 * 3600)
     hours = seconds // 3600
     seconds %= 3600
     minutes = seconds // 60
     return f"{int(days)}Days {int(hours)}Hours {int(minutes)}Minutes"
+
+def get_date_parts(date):
+    if date:
+        try:
+            dateObj=datetime.strptime(date, "%Y-%m-%d")
+            day=dateObj.day
+            month=dateObj.month
+            year=dateObj.year
+            return year, month, day
+        except ValueError:
+            return None, None, None
+    else:
+        return None, None, None

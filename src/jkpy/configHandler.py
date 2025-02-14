@@ -88,6 +88,15 @@ class ConfigHandler(JiraHandler):
         else:
             request.statusTypes=config.get("statusTypes", [])
 
+        if request.metricLabels and len(request.metricLabels) > 0:
+            request.log(f"adding metric labels {", ".join(request.metricLabels)}.")
+            metricLabelsSet=set(config.get("metricLabels", [])) # get existing config as a set
+            metricLabelsSet.update(request.metricLabels.split(",")) # update set with values from request
+            config["metricLabels"]=list(metricLabelsSet) # set config
+            request.metricLabels=list(metricLabelsSet) # set reqeust
+        else:
+            request.metricLabels=config.get("metricLabels", [])
+
         if request.remove_teamLabels and len(request.remove_teamLabels) > 0:
             request.log(f"removing team labels {", ".join(request.remove_teamLabels)}.")
             teamLabelsList=config.get("teamLabels", []) # updated labels are in the config
@@ -111,6 +120,14 @@ class ConfigHandler(JiraHandler):
             updatedStatusTypes=[status for status in statusTypesArray if status not in request.remove_statusTypes.split(",")]
             config["statusTypes"]=updatedStatusTypes # update config
             request.statusTypes=updatedStatusTypes # update request
+
+        if request.remove_metricLabels and len(request.remove_metricLabels) > 0:
+            request.log(f"removing metric labels {", ".join(request.remove_metricLabels)}.")
+            metricLabelsArray=config.get("metricLabels", []) # updated labels are in the config
+            # filter out all items to remove into a new list
+            updatedMetricLabels=[label for label in metricLabelsArray if label not in request.remove_metricLabels.split(",")]
+            config["metricLabels"]=updatedMetricLabels # update config
+            request.metricLabels=updatedMetricLabels # update request
 
         self.write_update_config(config, request)
         if request.isSetup:

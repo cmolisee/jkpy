@@ -76,5 +76,5 @@ class RequestHandler(JiraHandler):
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
         request.responseList=responseList
-
+        
         return super().handle(request)

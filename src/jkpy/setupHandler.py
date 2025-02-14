@@ -4,12 +4,11 @@
 import calendar
 from datetime import date
 import io
-import re
 from requests.auth import HTTPBasicAuth
 from dateutil.rrule import *
 
 from jkpy.jiraHandler import JiraHandler
-from jkpy.utils import sys_exit
+from jkpy.utils import get_date_parts, sys_exit
 
 class SetupHandler(JiraHandler):
     """SetupHandler(JiraHandler)
@@ -40,28 +39,21 @@ class SetupHandler(JiraHandler):
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
         currentYear=date.today().year
-        startDateParts=request.startDate.split() if request.startDate else [f"{currentYear}Y", "1M", "1D"]
-        endDateParts=request.startDate.split() if request.startDate else [f"{currentYear}Y", "12M", "31D"]
+        
+        startYear,startMonth,startDay=get_date_parts(request.startDate)
+        endYear,endMonth,endDay=get_date_parts(request.endDate)
 
-        startDayPart=[re.search(r"\d+", p).group() for p in startDateParts if "D" in p]
-        startMonthPart=[re.search(r"\d+", p).group() for p in startDateParts if "M" in p]
-        startYearPart=[re.search(r"\d+", p).group() for p in startDateParts if "Y" in p]
-
-        endDayPart=[re.search(r"\d+", p).group() for p in endDateParts if "D" in p]
-        endMonthPart=[re.search(r"\d+", p).group() for p in endDateParts if "M" in p]
-        endYearPart=[re.search(r"\d+", p).group() for p in endDateParts if "Y" in p]
-
-        startDay=int(startDayPart[0]) if len(startDayPart) > 0 else 1
-        startMonth=int(startMonthPart[0]) if len(startMonthPart) > 0 else 1
-        startYear=int(startYearPart[0]) if len(startYearPart) > 0 else currentYear
-
-        endDay=int(endDayPart[0]) if len(endDayPart) > 0 else 31
-        endMonth=int(endMonthPart[0]) if len(endMonthPart) > 0 else 12
-        endYear=int(endYearPart[0]) if len(endYearPart) > 0 else currentYear        
-
-        startDate=date(startYear, startMonth, startDay)
-        endDate=date(endYear, endMonth, endDay)
-
+        startDate=date(
+            startYear if startYear else currentYear, 
+            startMonth if startMonth else 1, 
+            startDay if startDay else 1
+            )
+        endDate=date(
+            endYear if endYear else currentYear, 
+            endMonth if endMonth else 12, 
+            endDay if endDay else 31
+            )
+        
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
         try:
@@ -77,32 +69,28 @@ class SetupHandler(JiraHandler):
         for idx, dt in monthsInRange:
             try:
                 _, lastDayOfMonth=calendar.monthrange(dt.year, dt.month)
-                
                 if startDate.day > 1:
                     formattedStartDate=dt.replace(day=startDate.day).strftime("%Y-%m-%d")
                 else: 
                     formattedStartDate=dt.replace(day=1).strftime("%Y-%m-%d")
 
-                if (endDate.day < lastDayOfMonth and idx == len(monthsInRange) - 1):
+                if (endMonth == dt.month and endDate.day < lastDayOfMonth):
                     formattedEndDate=dt.replace(day=endDate.day).strftime("%Y-%m-%d")
                 else:
                     formattedEndDate=dt.replace(day=lastDayOfMonth).strftime("%Y-%m-%d")
-
-                # We probably need to remove team name and only search by name label
-                # that way we can search for any other tickets on other boards that only have the name label (i.e. QFC)
-                # team name should be used to only aggregate team stats
+                    
+                # JQL query to get all tickets that
+                # 1) have one of the name labels in it
+                # or
+                # 2) are assigned to one of the team labels with a status changed to one of the status labels
+                # both between the after and before dates
                 jql=io.StringIO()
-                # jql.write("\"Team Name[Dropdown]\" in ")
-                # jql.write(f"({', '.join(str(s) for s in request.teamLabels)}) ") # filter by team labels
                 jql.write(f"((labels in ({', '.join(n for n in request.nameLabels)})) ")
                 jql.write(f"OR (\"Team Name[Dropdown]\" in ({', '.join(str(s) for s in request.teamLabels)}))) ")
                 jql.write("AND status CHANGED TO ")
                 jql.write(f"({', '.join(str(s) for s in request.statusTypes)}) ") # filter by status type changed too
                 jql.write(f"AFTER {formattedStartDate} ") # status change date from
                 jql.write(f"BEFORE {formattedEndDate} ") # status change date too
-                # jql.write("AND type IN (Task, Story, Epic, Bug, Enhancement) ") # include only valid ticket types
-                # jql.write("AND labels NOT IN (QA, Content-Only, Release-Management) ") # exclude specific labels
-                # jql.write("AND Sprint != EMPTY ") # exclude tickets w/o sprint
                 jql.write("ORDER BY created DESC")
 
                 request.log(f"JQL for {calendar.month_name[dt.month]}: {jql.getvalue()}.")

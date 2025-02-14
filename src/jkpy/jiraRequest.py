@@ -12,9 +12,11 @@ class JiraRequest:
         self.teamLabels=requestConfig.get("teamLabels", None)
         self.nameLabels=requestConfig.get("nameLabels", None)
         self.statusTypes=requestConfig.get("statusTypes", None)
+        self.metricLabels=requestConfig.get("metricLabels", None)
         self.remove_teamLabels=requestConfig.get("remove_teamLabels", None)
         self.remove_nameLabels=requestConfig.get("remove_nameLabels", None)
         self.remove_statusTypes=requestConfig.get("remove_statusTypes", None)
+        self.remove_metricLabels=requestConfig.get("remove_metricLabels", None)
 
         """setup requestConfig values for single jql run"""
         self.isUpdate=requestConfig.get("update", True)
@@ -39,9 +41,11 @@ class JiraRequest:
             teamLabels={self.teamLabels},
             nameLabels={self.nameLabels},
             statusTypes={self.statusTypes},
+            metricLabels={self.metricLabels},
             remove_teamLabels={self.remove_teamLabels},
             remove_nameLabels={self.remove_nameLabels},
             remove_statusTypes={self.remove_statusTypes},
+            remove_metricLabels={self.remove_statusTypes},
             startDate={self.startDate},
             endDate={self.endDate},
             isSetup={self.isSetup},

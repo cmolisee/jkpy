@@ -1,7 +1,6 @@
 """jkpy metricHandler"""
 # jkpy/metricHandler.py
 
-import math
 import traceback
 import pandas as pd
 
@@ -31,6 +30,7 @@ class MetricHandler(JiraHandler):
             sys_exit(1, request, "request.responseList DNE.")
 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+        # months
 
         metricsList=[]
         fullDataset=[]
@@ -43,7 +43,7 @@ class MetricHandler(JiraHandler):
                 dfs=df.shape[0]
                 
                 request.log(f"building metrics for {month}")
-                metrics["overall"]=self.get_dataset_stats(df, month, request.nameLabels if isQuarter else []);
+                metrics["overall"]=self.get_dataset_stats(df, month, "quarter" if isQuarter else "month", request);
 
                 for n in request.nameLabels:
                     request.log(f"building metrics for name label {n} in {month}")
@@ -53,17 +53,17 @@ class MetricHandler(JiraHandler):
                         continue
 
                     nameSubset=df[df["fields.labels"].apply(lambda x: n in x)]
-                    metrics[n]=self.get_dataset_stats(nameSubset, n)
+                    metrics[n]=self.get_dataset_stats(nameSubset, n, "name", request)
 
                 for t in request.teamLabels:
-                    request.log(f"building metrics for team label {n} in {month}")
+                    request.log(f"building metrics for team label {t} in {month}")
 
                     if dfs == 0:
                         metrics[t]={}
                         continue
 
                     teamSubset=df[df["fields.customfield_10235.value"].apply(lambda x: x == t)]
-                    metrics[t]=self.get_dataset_stats(teamSubset, t)
+                    metrics[t]=self.get_dataset_stats(teamSubset, t, "team", request)
                 
                 
                 metricsList.append({
@@ -73,6 +73,7 @@ class MetricHandler(JiraHandler):
                 fullDataset.extend(responseObject.get("issues", []))
 
             # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+            # annual
 
             keys=list(map(lambda obj: obj.get("fields").get("key"), fullDataset))
             duplicates=has_duplicate(keys)
@@ -85,27 +86,27 @@ class MetricHandler(JiraHandler):
             dfs=df.shape[0]
         
             request.log(f"building metrics for full dataset")
-            fullDatasetMetrics["overall"]=self.get_dataset_stats(df, "annual", request.nameLabels);
+            fullDatasetMetrics["overall"]=self.get_dataset_stats(df, "annual", "annual", request);
             
             for n in request.nameLabels:
                 request.log(f"building annual metrics for name label {n}")
 
                 if dfs == 0:
-                    fullDatasetMetrics[t]={}
+                    fullDatasetMetrics[n]={}
                     continue
                 
                 nameSubset=df[df["fields.labels"].apply(lambda x: n in x)]
-                fullDatasetMetrics[n]=self.get_dataset_stats(nameSubset, n)
+                fullDatasetMetrics[n]=self.get_dataset_stats(nameSubset, n, "name", request)
 
             for t in request.teamLabels:
-                request.log(f"building annual metrics for team label {n}")
+                request.log(f"building annual metrics for team label {t}")
 
                 if dfs == 0:
                     fullDatasetMetrics[t]={}
                     continue
 
                 teamSubset=df[df["fields.customfield_10235.value"].apply(lambda x: x == t)]
-                fullDatasetMetrics[t]=self.get_dataset_stats(teamSubset, t)
+                fullDatasetMetrics[t]=self.get_dataset_stats(teamSubset, t, "team", request)
 
             metricsList.append({
                 "set": "annual",
@@ -124,7 +125,7 @@ class MetricHandler(JiraHandler):
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
-    def get_dataset_stats(self, dataset: pd.DataFrame, datasetName: str, nameLabels=[]):
+    def get_dataset_stats(self, dataset: pd.DataFrame, datasetName: str, datasetType: str, request):
         stats={
             "datasetName": datasetName,
             "totalIssues": dataset.shape[0],
@@ -146,11 +147,14 @@ class MetricHandler(JiraHandler):
             # calculated
             stats["storyPointAverage"]=round(stats.get("storyPointSum") / stats.get("totalIssues"), 3)
             stats["noTrackingDeficit"]=round((stats.get("totalNoTrackging") / stats.get("totalIssues")) * 100, 3)
+            # metrics by labels
+            for metricLabel in request.metricLabels:
+                stats[metricLabel]=dataset[dataset["fields.labels"].apply(lambda x: metricLabel in x)].shape[0]
             # run additional stats if nameLabels exists
             # primarily for quarterly and annual metrics
-            if len(nameLabels) > 0:
+            if datasetType == "quarter" or datasetType == "annual":
                 stats["noStoryPoints"]=dataset["fields.customfield_10028"].apply(lambda x: x is None or x == 0).sum()
-                stats["noNameLabel"]=dataset["fields.customfield_10235.value"].apply(lambda x: any(str(x) in n for n in nameLabels)).sum()
+                stats["noNameLabel"]=dataset["fields.customfield_10235.value"].apply(lambda x: any(str(x) in n for n in request.nameLabels)).sum()
     
         return stats
     

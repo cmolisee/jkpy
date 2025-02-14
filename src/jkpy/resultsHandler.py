@@ -48,10 +48,6 @@ class ResultsHandler(JiraHandler):
                 for metrics in request.metricsList:
                     df2=pd.DataFrame.from_dict(metrics.get("data"), orient="index")
                     df2.to_excel(writer, sheet_name=metrics.get("set"), index=False)
-                    # if df2.shape[0] > 0:
-                    #     df2.to_excel(writer, sheet_name=metrics.get("set"), index=False)
-                    # else:
-                    #     pd.DataFrame().to_excel(writer, sheet_name=metrics.get("set"), index=False)
 
             with open(logPath, "a") as file:
                 for log in request.logs:

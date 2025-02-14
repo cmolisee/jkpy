@@ -6,9 +6,11 @@ folderPath=""
 nameLabels=""
 teamLabels=""
 statusTypes=""
+metricLabels=""
 removeNameLabels=""
 removeTeamLabels=""
 removeStatusTypes=""
+removeMetricLabels=""
 startDate=""
 endDate=""
 
@@ -27,12 +29,12 @@ help:
 
 # make setup email=john@gmail.com token=abc123 folderPath=$HOME/Desktop nameLabels=a,b,c teamLabels=a,b,c statusTypes=a,b,c removeNameLabels=a,b,c removeTeamLabels=a,b,c removeStatusTypes=a,b,c
 setup:
-	$(VENV)/bin/jkpy --isSetup -e $(email) -t $(token) -fp $(folderPath) -nl $(nameLabels) -tl $(teamLabels) -st $(statusTypes) --remove-nameLabels $(removeNameLabels) --remove-teamLabels $(removeTeamLabels) --remove-statusTypes $(removeStatusTypes)
+	$(VENV)/bin/jkpy --isSetup -e $(email) -t $(token) -fp $(folderPath) -nl $(nameLabels) -tl $(teamLabels) -st $(statusTypes) -ml $(metricLabels) --remove-nameLabels $(removeNameLabels) --remove-teamLabels $(removeTeamLabels) --remove-statusTypes $(removeStatusTypes) --remove-metricLabels $(removeMetricLabels)
 
 # make config
 config:
 	$(VENV)/bin/jkpy --showConfig
 
-# make run startDate="01D 01M 2025M" endDate="31D 12M 2025Y"
+# make run startDate=2025-01-01 endDate=2025-02-01 (i.e. date is in year-month-day format)
 run:
 	$(VENV)/bin/jkpy --startDate ${startDate} --endDate ${endDate}
