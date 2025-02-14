@@ -2,63 +2,61 @@
 #  jkpy/utils.py
 
 from datetime import datetime
+import os
+
 from pathlib import Path
-from rich.table import Table
-        
-class state():
-    def __init__(self):
-        """Initialize object"""
-        self.s = {}
-    
-    def get(self, key: str):
-        """Get value by key"""
-        if key in self.s:
-            return self.s[key]
-        return None
-    
-    def set(self, key: str, value: any):
-        self.s[key] = value
+import sys
 
-def get_timestamp():
-    now = datetime.now()
-    return f"{now.year}_{now.month}_{now.day}:{now.hour}:{now.minute}"
-
-def verify_config(config):
-    """validate config contains required values"""
-    e = config.get("email")
-    t = config.get("token")
-    
-    if not e and not t:
-        raise Exception("[red bold]Missing 'email' and 'token'")
-    elif not e:
-        raise Exception("[red bold]Missing 'email'")
-    elif not t:
-        raise Exception("[red bold]Missing 'token'")
+def clean_folder_path(path: str):
+    """Removes the file name from the end of a path string if it exists."""
+    if os.path.isfile(path):
+        return Path(os.path.dirname(path))
     else:
-        return True
+        return Path(path)
 
-def validate_path(path):
-    """validate path"""
-    p = Path(path.split('.', 1)[0] + ".xlsx")
+def sys_exit(code: int, request, log):
+    if request:
+        logPath=os.path.join(Path.home(), request.folderPath if request.folderPath else "Desktop/jkpy", "jkpy.logs.txt")
+        request.log(log)
 
-    if not p.parent.is_dir():
-        raise ValueError(f"Parent directory does not exist: {p.parent}")
-    return p
+        with open(logPath, "a") as file:
+                for log in request.logs:
+                    file.write(log + "\n")
+    sys.exit(code)
 
-def make_table(name: str, data: dict) -> Table:
-    """build table to display stats to user"""
-    table = Table(title=name, style="magenta")
-    
-    table.add_column("Dataset", style="bold", justify="left")
-    table.add_column("KPI", style="bold", justify="left")
-    table.add_column("Value", justify="right")
-    
-    for name, obj in data.items():
-        for i, (k, v) in enumerate(obj.items()):
-            if i == 0:
-                table.add_section()
-                table.add_row(f"{name}", f"{k}", str(v))
-            else:
-                table.add_row("", f"{k}", str(v))
-        
-    return table
+def has_duplicate(list):
+    """
+    Checks if a list has duplicates.
+    """
+
+    seen=set()
+    duplicates=[]
+    for i in list:
+        if i is not None and i in seen:
+            duplicates.append(i)
+        seen.add(i)
+    return duplicates
+
+def convert_seconds(seconds):
+    """
+    Given seconds return a string for days, hours and minutes
+    """
+    days = seconds // (24 * 3600)
+    seconds %= (24 * 3600)
+    hours = seconds // 3600
+    seconds %= 3600
+    minutes = seconds // 60
+    return f"{int(days)}Days {int(hours)}Hours {int(minutes)}Minutes"
+
+def get_date_parts(date):
+    if date:
+        try:
+            dateObj=datetime.strptime(date, "%Y-%m-%d")
+            day=dateObj.day
+            month=dateObj.month
+            year=dateObj.year
+            return year, month, day
+        except ValueError:
+            return None, None, None
+    else:
+        return None, None, None
