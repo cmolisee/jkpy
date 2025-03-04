@@ -64,20 +64,20 @@ class ConfigHandler(JiraHandler):
         if request.teamLabels and len(request.teamLabels) > 0:
             request.log(f"adding and sorting team labels {", ".join(request.teamLabels)}.")
             teamLabelsSet=set(config.get("teamLabels", [])) # get existing config as a set
-            teamLabelsSet.update(request.teamLabels.split(",").sort()) # update set with values from request
+            teamLabelsSet.update(sorted(request.teamLabels.split(","))) # update set with values from request
             config["teamLabels"]=list(teamLabelsSet) # set config
             request.teamLabels=list(teamLabelsSet) # set reqeust
         else:
-            request.teamLabels=config.get("teamLabels", []).sort()
+            request.teamLabels=sorted(config.get("teamLabels", []))
 
         if request.nameLabels and len(request.nameLabels) > 0:
             request.log(f"adding and sorting name labels {", ".join(request.nameLabels)}.")
             nameLabelsSet=set(config.get("nameLabels", [])) # get existing config as a set
-            nameLabelsSet.update(request.nameLabels.split(",").sort()) # update set with values from request
+            nameLabelsSet.update(sorted(request.nameLabels.split(","))) # update set with values from request
             config["nameLabels"]=list(nameLabelsSet) # set config
             request.nameLabels=list(nameLabelsSet) # set reqeust
         else:
-            request.nameLabels=config.get("nameLabels", []).sort()
+            request.nameLabels=sorted(config.get("nameLabels", []))
 
         if request.statusTypes and len(request.statusTypes) > 0:
             request.log(f"adding status types {", ".join(request.statusTypes)}.")
@@ -102,16 +102,16 @@ class ConfigHandler(JiraHandler):
             teamLabelsList=config.get("teamLabels", []) # updated labels are in the config
             # filter out all items to remove into a new list
             updatedTeamLabels=[label for label in teamLabelsList if label not in request.remove_teamLabels.split(",")]
-            config["teamLabels"]=updatedTeamLabels.sort() # update config
-            request.teamLabels=updatedTeamLabels.sort() # update request
+            config["teamLabels"]=sorted(updatedTeamLabels) # update config
+            request.teamLabels=sorted(updatedTeamLabels) # update request
 
         if request.remove_nameLabels and len(request.remove_nameLabels) > 0:
             request.log(f"removing name labels {", ".join(request.remove_nameLabels)}.")
             nameLabelsArray=config.get("nameLabels", []) # updated labels are in the config
             # filter out all items to remove into a new list
             updatedNameLabels=[label for label in nameLabelsArray if label not in request.remove_nameLabels.split(",")]
-            config["nameLabels"]=updatedNameLabels.sort() # update config
-            request.nameLabels=updatedNameLabels.sort() # update request
+            config["nameLabels"]=sorted(updatedNameLabels) # update config
+            request.nameLabels=sorted(updatedNameLabels) # update request
 
         if request.remove_statusTypes and len(request.remove_statusTypes) > 0:
             request.log(f"removing status types {", ".join(request.remove_statusTypes)}.")
