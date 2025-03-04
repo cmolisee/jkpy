@@ -145,7 +145,7 @@ class MetricHandler(JiraHandler):
             stats["totalThreePointers"]=dataset["fields.customfield_10028"].apply(lambda x: x == 3).sum()
             stats["totalFivePointers"]=dataset["fields.customfield_10028"].apply(lambda x: x == 5).sum()
             # calculated
-            stats["storyPointAverage"]=round(stats.get("storyPointSum") / stats.get("totalIssues"), 3)
+            stats["storyPointAverage"]=round(dataset["fields.customfield_10028"])
             stats["noTrackingDeficit"]=round((stats.get("totalNoTrackging") / stats.get("totalIssues")) * 100, 3)
             # metrics by labels
             for metricLabel in request.metricLabels:
