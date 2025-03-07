@@ -96,6 +96,7 @@ class MetricHandler(JiraHandler):
                     continue
                 
                 nameSubset=df[df["fields.labels"].apply(lambda x: n in x)]
+                # multipleNameLabels=self.find_multiple_name_labels(nameSubset, request)
                 fullDatasetMetrics[n]=self.get_dataset_stats(nameSubset, n, "name", request)
 
             for t in request.teamLabels:
@@ -126,12 +127,23 @@ class MetricHandler(JiraHandler):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
     def get_dataset_stats(self, dataset: pd.DataFrame, datasetName: str, datasetType: str, request):
+        """Parse Metrics from data"""
         stats={
             "datasetName": datasetName,
             "totalIssues": dataset.shape[0],
         }
 
         if stats.get("totalIssues") > 0:
+            primaryDevDf=dataset
+            if datasetType == "name":
+                displayName=datasetName.replace("-", " ")
+                # filter the dataset for issues where this dev is the primary
+                filterCondition = (
+                    (dataset["fields.customfield_10264.displayName"].notna() & (dataset["fields.customfield_10264.displayName"] == displayName)) | 
+                    dataset["fields.customfield_10264.displayName"].isna()
+                )
+                primaryDevDf=dataset[filterCondition]
+
             stats["storyPointSum"]=dataset["fields.customfield_10028"].sum()
             stats["totalTimeSpent"]=convert_seconds(seconds=dataset["fields.timespent"].sum())
             stats["totalNoTrackging"]=dataset["fields.timespent"].isna().sum()
@@ -145,11 +157,16 @@ class MetricHandler(JiraHandler):
             stats["totalThreePointers"]=dataset["fields.customfield_10028"].apply(lambda x: x == 3).sum()
             stats["totalFivePointers"]=dataset["fields.customfield_10028"].apply(lambda x: x == 5).sum()
             # calculated
-            stats["storyPointAverage"]=round(dataset["fields.customfield_10028"])
+            stats["storyPointAverage"]=round(dataset["fields.customfield_10028"].mean())
             stats["noTrackingDeficit"]=round((stats.get("totalNoTrackging") / stats.get("totalIssues")) * 100, 3)
             # metrics by labels
             for metricLabel in request.metricLabels:
-                stats[metricLabel]=dataset[dataset["fields.labels"].apply(lambda x: metricLabel in x)].shape[0]
+                if primaryDevDf.empty:
+                    print(f"primaryDevDf is empty for {datasetName}")
+                    print(f"original dataset is {dataset}")
+                    stats[metricLabel]=0
+                else:
+                    stats[metricLabel]=primaryDevDf[primaryDevDf["fields.labels"].apply(lambda x: metricLabel in x)].shape[0]
             # run additional stats if nameLabels exists
             # primarily for quarterly and annual metrics
             if datasetType == "quarter" or datasetType == "annual":
@@ -157,4 +174,3 @@ class MetricHandler(JiraHandler):
                 stats["noNameLabel"]=dataset["fields.customfield_10235.value"].apply(lambda x: any(str(x) in n for n in request.nameLabels)).sum()
     
         return stats
-    

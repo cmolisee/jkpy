@@ -1,5 +1,5 @@
-"""jkpy setupHandler"""
-# jkpy/setupHandler.py
+"""jkpy jqlSetupHandler"""
+# jkpy/jqlSetupHandler.py
 
 import calendar
 from datetime import date
@@ -10,7 +10,7 @@ from dateutil.rrule import *
 from jkpy.jiraHandler import JiraHandler
 from jkpy.utils import get_date_parts, sys_exit
 
-class SetupHandler(JiraHandler):
+class JqlSetupHandler(JiraHandler):
     """SetupHandler(JiraHandler)
     
     Concrete implementation of the JiraHandler interface.
@@ -60,13 +60,13 @@ class SetupHandler(JiraHandler):
             path=f"https://creditonebank.atlassian.net/rest/api/3/search/jql"
             headers={ "Accept": "application/json" }
             auth=HTTPBasicAuth(request.email, request.token)
-            fields='resolutiondate,updated,assignee,created,customfield_10003,customfield_10014,customfield_10235,customfield_10303,customfield_10157,fixVersion,labels,status,statuscategorychangedate,key,customfield_10020,customfield_10028,timespent'
+            fields='customfield_10264,resolutiondate,updated,assignee,created,customfield_10003,customfield_10014,customfield_10235,customfield_10303,customfield_10157,fixVersion,labels,status,statuscategorychangedate,key,customfield_10020,customfield_10028,timespent'
         except Exception as e:
             sys_exit(1, request, f"exception occured building request fields: {e}")
 
         requestList=[]
         monthsInRange=enumerate(rrule(MONTHLY, dtstart=startDate, until=endDate))
-        for idx, dt in monthsInRange:
+        for _, dt in monthsInRange:
             try:
                 _, lastDayOfMonth=calendar.monthrange(dt.year, dt.month)
                 if startDate.day > 1:

@@ -8,6 +8,8 @@ import urllib3
 from jkpy.jiraHandler import JiraHandler
 from jkpy.utils import sys_exit
 
+import pandas as pd
+
 urllib3.disable_warnings()
 
 class RequestHandler(JiraHandler):
@@ -69,6 +71,11 @@ class RequestHandler(JiraHandler):
                     "month": requestObject.get("month"),
                     "issues": issues
                 })
+                
+                df=pd.json_normalize(issues)
+                for _,row in df.iterrows():
+                    if not pd.isna(row["fields.customfield_10264"]):
+                        print(row["fields.customfield_10264"])
 
         except Exception as e:
             sys_exit(1, request, f"exception occured processing request: {e}")

@@ -1,10 +1,6 @@
-"""utilities"""
-#  jkpy/utils.py
-
 from datetime import datetime
-import os
-
 from pathlib import Path
+import os
 import sys
 
 def clean_folder_path(path: str):
