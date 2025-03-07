@@ -1,37 +1,33 @@
-"""jkpy requestHandler"""
-# jkpy/reqeustHandler.py
-
+from jkpy.jiraHandler import JiraHandler
+from jkpy.utils import sys_exit
 import json
+import pandas as pd
 import requests
 import urllib3
 
-from jkpy.jiraHandler import JiraHandler
-from jkpy.utils import sys_exit
-
-import pandas as pd
-
+# silence console output from this lib from requests
 urllib3.disable_warnings()
 
 class RequestHandler(JiraHandler):
-    """RequestHandler(JiraHandler)
-    
-    Concrete implementation of the JiraHandler interface.
-    Responsible for making requests and passing results for request objects.
+    """Makes requests to jira and handles the raw response.
+
+    Args:
+        JiraHandler (_type_): _description_
     """
 
     def handle(self, request):
-        """RequestHandler(JiraHandler).hanlde(self, request)
-        
-        Concrete implementation of the handle() method from JiraHandler.
-        Processes all requests and passes results to the next handler.
-        This is dependent on requestList from setupHandler().
+        """Handler implementation.
+
+        Args:
+            request (_type_): _description_
+
+        Returns:
+            _type_: _description_
         """
 
         request.log("RequestHandler().handle().")
         if not request.proceed:
             sys_exit(0, request, "request.proceed is False. Exiting.")
-        
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
         responseList=[]
         try:
@@ -80,8 +76,5 @@ class RequestHandler(JiraHandler):
         except Exception as e:
             sys_exit(1, request, f"exception occured processing request: {e}")
         
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-
         request.responseList=responseList
-        
         return super().handle(request)
