@@ -1,26 +1,24 @@
-"""jkpy userMappingHandler"""
-# jkpy/userMappingHandler.py
-
-import json
-import requests
-
 from jkpy.jiraHandler import JiraHandler
 from jkpy.utils import sys_exit
 from requests.auth import HTTPBasicAuth
-
+import json
+import requests
 
 class UserMappingHandler(JiraHandler):
-    """UserMappingHandler(JiraHandler)
-    
-    Concrete implementation of the JiraHandler interface.
-    Makes requests to Jira to map name labels to userID's.
+    """Maps name labels in the config to actual user data from Jira.
+
+    Args:
+        JiraHandler (_type_): _description_
     """
 
     def handle(self, request):
-        """UserMappingHandler(JiraHandler).hanlde(self, request)
-        
-        Concrete implementation of the handle() method from JiraHandler.
-        Makes requests to Jira to map name labels to userID's.
+        """Handler implementation.
+
+        Args:
+            request (_type_): _description_
+
+        Returns:
+            _type_: _description_
         """
 
         request.log("UserMappingHandler().handle().")
@@ -32,8 +30,6 @@ class UserMappingHandler(JiraHandler):
         
         if not request.email:
             sys_exit(1, request, "Could not find jira email required for authentication.")
-
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
         accountIds={}
         try:
@@ -68,5 +64,4 @@ class UserMappingHandler(JiraHandler):
             sys_exit(1, request, f"exception occured processing request: {e}")
 
         request.accountIds=accountIds
-
         return super().handle(request)
