@@ -36,7 +36,7 @@ def main(
     showConfig: Annotated[bool, showConfigOption]=False,
 ) -> None:
     """Main application"""
-    request.log("Initializing JiraRequest object...")
+    
     request=JiraRequest({
         "isSetup": isSetup,
         "email": email,
@@ -54,6 +54,7 @@ def main(
         "endDate": endDate,
         "showConfig": showConfig
     });
+    request.log("Initializing JiraRequest object...")
     
     # handler call chain
     resultsHandler=ResultsHandler()
