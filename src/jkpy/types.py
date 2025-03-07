@@ -15,4 +15,3 @@ class RequestObject:
     headers: dict
     query: QueryObject
     auth: HTTPBasicAuth
-        

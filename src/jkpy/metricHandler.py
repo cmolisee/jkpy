@@ -1,25 +1,23 @@
-"""jkpy metricHandler"""
-# jkpy/metricHandler.py
-
-import traceback
-import pandas as pd
-
 from jkpy.jiraHandler import JiraHandler
 from jkpy.utils import convert_seconds, has_duplicate, sys_exit
+import pandas as pd
+import traceback
 
 class MetricHandler(JiraHandler):
-    """MetricHandler(JiraHandler)
-    
-    Concrete implementation of the JiraHandler interface.
-    Responsible for building metrics from response objects.
+    """Builds metrics based on issue datasets.
+
+    Args:
+        JiraHandler (_type_): _description_
     """
 
     def handle(self, request):
-        """MetricHandler(JiraHandler).hanlde(self, request)
-        
-        Concrete implementation of the handle() method from JiraHandler.
-        Processes all response objects to build metrics.
-        Dependent on responseList from requestHandler().
+        """Handler implementation.
+
+        Args:
+            request (_type_): _description_
+
+        Returns:
+            _type_: _description_
         """
 
         request.log("MetricHandler().handle().")
@@ -28,9 +26,6 @@ class MetricHandler(JiraHandler):
 
         if not request.responseList:
             sys_exit(1, request, "request.responseList DNE.")
-
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-        # months
 
         metricsList=[]
         fullDataset=[]
@@ -72,9 +67,6 @@ class MetricHandler(JiraHandler):
                 })
                 fullDataset.extend(responseObject.get("issues", []))
 
-            # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-            # annual
-
             keys=list(map(lambda obj: obj.get("fields").get("key"), fullDataset))
             duplicates=has_duplicate(keys)
             if len(duplicates) > 0:
@@ -96,7 +88,6 @@ class MetricHandler(JiraHandler):
                     continue
                 
                 nameSubset=df[df["fields.labels"].apply(lambda x: n in x)]
-                # multipleNameLabels=self.find_multiple_name_labels(nameSubset, request)
                 fullDatasetMetrics[n]=self.get_dataset_stats(nameSubset, n, "name", request)
 
             for t in request.teamLabels:
@@ -116,18 +107,23 @@ class MetricHandler(JiraHandler):
 
         except Exception:
             sys_exit(1, request, f"exception occured building metrics from response data: {traceback.format_exc()}")
-        
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
         request.fullDataset=fullDataset
         request.metricsList=metricsList
-
         return super().handle(request)
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-
     def get_dataset_stats(self, dataset: pd.DataFrame, datasetName: str, datasetType: str, request):
-        """Parse Metrics from data"""
+        """Parses the dataset using the provided arguments to produce metrics.
+
+        Args:
+            dataset (pd.DataFrame): _description_
+            datasetName (str): _description_
+            datasetType (str): _description_
+            request (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         stats={
             "datasetName": datasetName,
             "totalIssues": dataset.shape[0],
@@ -162,8 +158,6 @@ class MetricHandler(JiraHandler):
             # metrics by labels
             for metricLabel in request.metricLabels:
                 if primaryDevDf.empty:
-                    print(f"primaryDevDf is empty for {datasetName}")
-                    print(f"original dataset is {dataset}")
                     stats[metricLabel]=0
                 else:
                     stats[metricLabel]=primaryDevDf[primaryDevDf["fields.labels"].apply(lambda x: metricLabel in x)].shape[0]
