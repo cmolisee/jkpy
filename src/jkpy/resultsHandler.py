@@ -1,33 +1,30 @@
-"""jkpy resultsHandler"""
-# jkpy/resultsHandler.py
-
 from datetime import datetime
-import os
-from pathlib import Path
-import pandas as pd
-
 from jkpy.jiraHandler import JiraHandler
 from jkpy.utils import sys_exit
+from pathlib import Path
+import os
+import pandas as pd
 
 class ResultsHandler(JiraHandler):
-    """MetricHandler(JiraHandler)
-    
-    Concrete implementation of the JiraHandler interface.
-    Responsible for building metrics from response objects.
+    """Outputs all results to files based on configurations.
+
+    Args:
+        JiraHandler (_type_): _description_
     """
 
     def handle(self, request):
-        """MetricHandler(JiraHandler).hanlde(self, request)
-        
-        Concrete implementation of the handle() method from JiraHandler.
-        Handles the processing and output of all metrics.
+        """Handler implementation.
+
+        Args:
+            request (_type_): _description_
+
+        Returns:
+            _type_: _description_
         """
 
         request.log("ResultsHandler().handle().")
         if not request.proceed:
             sys_exit(0, request, "request.proceed is False. Exiting.")
-        
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
         try:
             outputPath=os.path.join(Path.home(), request.folderPath, str(datetime.now().year) + "_kpis.xlsx")
