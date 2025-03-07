@@ -1,30 +1,26 @@
-"""jkpy updateDevHandler"""
-# jkpy/updateDevHandler.py
-
 from jkpy.jiraHandler import JiraHandler
 from jkpy.utils import sys_exit
 from requests.auth import HTTPBasicAuth
-import pandas as pd
 import click
-import requests
 import json
-
+import pandas as pd
+import requests
 
 class UpdateDevHandler(JiraHandler):
-    """UpdateDevHandler(JiraHandler)
-    
-    Concrete implementation of the JiraHandler interface.
-    Responsible for finding tickets with multiple name labels and no developer label, 
-    prompting user, and updating the ticket.
+    """Filters issues for tickets that require primary developer updates.
+
+    Args:
+        JiraHandler (_type_): _description_
     """
 
     def handle(self, request):
-        """UpdateDevHandler(JiraHandler).hanlde(self, request)
-        
-        Concrete implementation of the handle() method from JiraHandler.
-        Filter all tickets from all datasets.
-        Identify tickets with multiple name labels and no developer.
-        Prompt user for the primary developer and update the ticket in Jira.
+        """Handler implementation.
+
+        Args:
+            request (_type_): _description_
+
+        Returns:
+            _type_: _description_
         """
 
         request.log("UpdateDevHandler().handle().")
@@ -36,8 +32,6 @@ class UpdateDevHandler(JiraHandler):
         
         if not request.email:
             sys_exit(1, request, "Could not find jira email required for authentication.")
-
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
         for i, responseData in enumerate(request.responseList):
             df=pd.json_normalize(responseData.get("issues", []))
@@ -62,10 +56,16 @@ class UpdateDevHandler(JiraHandler):
         
         return super().handle(request)
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-
     def prompt_and_select(self, options, prompt_message="Select an option"):
-        """Prompts the user to select an option from a list. """
+        """Prompt user to choose primary developer. Save response.
+
+        Args:
+            options (_type_): _description_
+            prompt_message (str, optional): _description_. Defaults to "Select an option".
+
+        Returns:
+            _type_: _description_
+        """
 
         click.echo(prompt_message)
         for i, option in enumerate(options):
@@ -81,10 +81,14 @@ class UpdateDevHandler(JiraHandler):
             except ValueError:
                 click.echo("Invalid input. Please enter a number.")
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-
     def send_update_request(self, request, labelName, ticketId):
-        """Make Jira request to update the developer field."""
+        """Make request to Jira to update the Developer field based on user selection.
+
+        Args:
+            request (_type_): _description_
+            labelName (_type_): _description_
+            ticketId (_type_): _description_
+        """
         print(request.accountIds[labelName]["accountId"])
         try:
             displayName=labelName.replace("-", " ")
