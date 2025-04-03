@@ -1,6 +1,7 @@
 from jkpy.jiraHandler import JiraHandler
 from jkpy.utils import convert_seconds, has_duplicate, sys_exit
 import pandas as pd
+import numpy as np
 import traceback
 
 class MetricHandler(JiraHandler):
@@ -134,15 +135,27 @@ class MetricHandler(JiraHandler):
             if datasetType == "name":
                 displayName=datasetName.replace("-", " ")
                 # filter the dataset for issues where this dev is the primary
-                filterCondition = (
-                    (dataset["fields.customfield_10264.displayName"].notna() & (dataset["fields.customfield_10264.displayName"] == displayName)) | 
-                    dataset["fields.customfield_10264.displayName"].isna()
-                )
-                primaryDevDf=dataset[filterCondition]
+                # print(f"displayName: {displayName}")
+                for index, row in dataset.iterrows():
+                    print(f"key: {row["key"]}")
+                    print(f"dev: {row["fields.customfield_10264"]}")
+                    print(f"dev type: {type(row["fields.customfield_10264"])}")
+                # print(f"is customfield_10264: {dataset["fields.customfield_10264.displayName"].notna()}")
+                # filterCondition = (
+                #     dataset["fields.customfield_10264"].isna() or
+                #     (dataset["fields.customfield_10264"].empty()) or
+                #     dataset["fields.customfield_10264.displayName"].apply(lambda x: displayName in x)
+                #     # (dataset["fields.customfield_10264"].notna() & (displayName in dataset["fields.customfield_10264.displayName"]))
+                # )
+                primaryDevDf=dataset[dataset["fields.customfield_10264"].apply(lambda x: 
+                    pd.isna(x) or
+                    x == '' or
+                    (isinstance(x, dict) and displayName in x.get('displayName'))
+                )]
 
             stats["storyPointSum"]=dataset["fields.customfield_10028"].sum()
             stats["totalTimeSpent"]=convert_seconds(seconds=dataset["fields.timespent"].sum())
-            stats["totalNoTrackging"]=dataset["fields.timespent"].isna().sum()
+            stats["totalNoTracking"]=dataset["fields.timespent"].isna().sum()
             stats["totalEnhancement"]=dataset[dataset["fields.labels"].apply(lambda x: "Enhancement" in x)].shape[0]
             stats["totalBugs"]=dataset[dataset["fields.labels"].apply(lambda x: "Bug" in x)].shape[0]
             stats["totalDefects"]=dataset[dataset["fields.labels"].apply(lambda x: "Defect" in x)].shape[0]
@@ -154,7 +167,7 @@ class MetricHandler(JiraHandler):
             stats["totalFivePointers"]=dataset["fields.customfield_10028"].apply(lambda x: x == 5).sum()
             # calculated
             stats["storyPointAverage"]=round(dataset["fields.customfield_10028"].mean())
-            stats["noTrackingDeficit"]=round((stats.get("totalNoTrackging") / stats.get("totalIssues")) * 100, 3)
+            stats["noTrackingDeficit"]=round((stats.get("totalNoTracking") / stats.get("totalIssues")) * 100, 3)
             # metrics by labels
             for metricLabel in request.metricLabels:
                 if primaryDevDf.empty:
