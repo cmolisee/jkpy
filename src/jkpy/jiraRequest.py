@@ -1,11 +1,14 @@
-"""request object passed through handlers"""
-#  jkpy/jiraRequest.py
-
 from datetime import datetime
 
 class JiraRequest:
     def __init__(self, requestConfig={}):
-        """setup requestConfig values"""
+        """Initialize request object.
+        This is the single source of truth for all data that is carried to all handlers.
+
+        Args:
+            requestConfig (dict, optional): _description_. Defaults to {}.
+        """
+        # user configs
         self.email=requestConfig.get("email", None)
         self.token=requestConfig.get("token", None)
         self.folderPath=requestConfig.get("folderPath", None)
@@ -17,23 +20,23 @@ class JiraRequest:
         self.remove_nameLabels=requestConfig.get("remove_nameLabels", None)
         self.remove_statusTypes=requestConfig.get("remove_statusTypes", None)
         self.remove_metricLabels=requestConfig.get("remove_metricLabels", None)
-
-        """setup requestConfig values for single jql run"""
+        # flags
+        self.showConfig=requestConfig.get("showConfig", False)
         self.isUpdate=requestConfig.get("update", True)
+        self.isSetup=requestConfig.get("isSetup", False)
+        # processing variables
         self.startDate=requestConfig.get("startDate", None)
         self.endDate=requestConfig.get("endDate", None)
-
-        """setup handler control/flow"""
-        self.isSetup=requestConfig.get("isSetup", False)
         self.proceed=True
         self.logs=[]
         self.requestData=None
         self.responseData=None
         self.metrics=None
         self.timestamp=int(datetime.now().timestamp())
-        self.showConfig=requestConfig.get("showConfig", False)
 
     def __str__(self):
+        """Override to define how this class is converted to a string.
+        """
         return f"""JiraRequest(
             email={self.email},
             token={self.token},
@@ -59,4 +62,9 @@ class JiraRequest:
         )"""
 
     def log(self, log):
+        """Logging function.
+
+        Args:
+            log (_type_): _description_
+        """
         self.logs.append(f"[{self.timestamp}] {log}")

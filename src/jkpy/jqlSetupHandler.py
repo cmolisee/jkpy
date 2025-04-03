@@ -1,29 +1,27 @@
-"""jkpy setupHandler"""
-# jkpy/setupHandler.py
-
-import calendar
 from datetime import date
-import io
-from requests.auth import HTTPBasicAuth
 from dateutil.rrule import *
-
 from jkpy.jiraHandler import JiraHandler
+from jkpy.types import RequestObject
 from jkpy.utils import get_date_parts, sys_exit
+from requests.auth import HTTPBasicAuth
+import calendar
+import io
 
-class SetupHandler(JiraHandler):
-    """SetupHandler(JiraHandler)
-    
-    Concrete implementation of the JiraHandler interface.
-    Responsible for building request objects from run configurations.
+class JqlSetupHandler(JiraHandler):
+    """Handles the setup of the Jira API requests.
+
+    Args:
+        JiraHandler (_type_): _description_
     """
 
     def handle(self, request):
-        """ConfigHandler(JiraHandler).hanlde(self, request)
-        
-        Concrete implementation of the handle() method from JiraHandler.
-        Parses the configurations to generate updated request objects.
-        Request objects are separated by month dependent on startDate and 
-        endDate in the configurations.
+        """Handler implementation.
+
+        Args:
+            request (_type_): _description_
+
+        Returns:
+            _type_: _description_
         """
 
         request.log("SetupHandler().handle().")
@@ -36,37 +34,32 @@ class SetupHandler(JiraHandler):
         if not request.email:
             sys_exit(1, request, "Could not find jira email required for authentication.")
 
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-
         currentYear=date.today().year
-        
         startYear,startMonth,startDay=get_date_parts(request.startDate)
         endYear,endMonth,endDay=get_date_parts(request.endDate)
 
+        # get user defined start date or first day of year
         startDate=date(
             startYear if startYear else currentYear, 
             startMonth if startMonth else 1, 
             startDay if startDay else 1
-            )
+        )
+        # get user defined end date or last day of year
         endDate=date(
             endYear if endYear else currentYear, 
             endMonth if endMonth else 12, 
             endDay if endDay else 31
-            )
-        
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+        )
 
-        try:
-            path=f"https://creditonebank.atlassian.net/rest/api/3/search/jql"
-            headers={ "Accept": "application/json" }
-            auth=HTTPBasicAuth(request.email, request.token)
-            fields='resolutiondate,updated,assignee,created,customfield_10003,customfield_10014,customfield_10235,customfield_10303,customfield_10157,fixVersion,labels,status,statuscategorychangedate,key,customfield_10020,customfield_10028,timespent'
-        except Exception as e:
-            sys_exit(1, request, f"exception occured building request fields: {e}")
+        # API request fields
+        path=f"https://creditonebank.atlassian.net/rest/api/3/search/jql"
+        headers={ "Accept": "application/json" }
+        auth=HTTPBasicAuth(request.email, request.token)
+        fields='customfield_10264,resolutiondate,updated,assignee,created,customfield_10003,customfield_10014,customfield_10235,customfield_10303,customfield_10157,fixVersion,labels,status,statuscategorychangedate,key,customfield_10020,customfield_10028,timespent'
 
-        requestList=[]
+        requestList: list[RequestObject]=[]
         monthsInRange=enumerate(rrule(MONTHLY, dtstart=startDate, until=endDate))
-        for idx, dt in monthsInRange:
+        for _, dt in monthsInRange:
             try:
                 _, lastDayOfMonth=calendar.monthrange(dt.year, dt.month)
                 if startDate.day > 1:
@@ -109,12 +102,9 @@ class SetupHandler(JiraHandler):
                 })
 
             except Exception as e:
-                sys_exit(1, request, f"exception occured building jql for {calendar.month_name[dt.month]}: {e}")
-            
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+                sys_exit(1, request, f"exception occured building request data for {calendar.month_name[dt.month]}: {e}")
 
         request.requestList=requestList
-        
         return super().handle(request)
 
 # aggregateprogress:"Σ Progress"

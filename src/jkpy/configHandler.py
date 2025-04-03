@@ -1,42 +1,34 @@
-"""jkpy configHandler"""
-# jkpy/configHandler.py
-
-import json
-import os
-from pathlib import Path
-from typing import Dict
-
 from jkpy.jiraHandler import JiraHandler
 from jkpy.utils import clean_folder_path, sys_exit
+from pathlib import Path
+from typing import Dict
+import json
+import os
 
 class ConfigHandler(JiraHandler):
-    """ConfigHandler(JiraHandler)
-    
-    Concrete implementation of the JiraHandler interface.
-    Responsible for adding, removing, updating, and retrieving configurations.
+    """Parses and updates configuration options.
+
+    Args:
+        JiraHandler (_type_): _description_
     """
 
     def handle(self, request):
-        """ConfigHandler(JiraHandler).hanlde(self, request)
-        
-        Concrete implementation of the handle() method from JiraHandler.
-        Checks the request object for each valid configuration to add, remove,
-        or update that configuration. Will pass the request to the next 
-        handler if applicable.
-        
-        There are two categories of configurations:
-        -----
-        1) configurations specific for this application run.
-        2) configurations specific to the application (global).
+        """Handler implementation.
+
+        Args:
+            request (_type_): _description_
+
+        Returns:
+            _type_: _description_
         """
 
         request.log("ConfigHandler().handle().")
+        
         if not request.proceed:
             sys_exit(0, request, "request.proceed is False. Exiting.")
         
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
         config: Dict[str, any]=self.get_config(request)
-
+        
         if request.showConfig:
             print(json.dumps(config, indent=4, sort_keys=True))
             sys_exit(0, request, "show configs only.")
@@ -136,6 +128,14 @@ class ConfigHandler(JiraHandler):
         return super().handle(request)
     
     def get_config(self, request):
+        """Retrieves configuration from file if it exists.
+
+        Args:
+            request (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         configPath=Path(os.path.join(Path.home(), "Documents/.jkpy/config.txt"))
         configPath.parent.mkdir(parents=True, exist_ok=True)
         
@@ -152,6 +152,12 @@ class ConfigHandler(JiraHandler):
             sys_exit(1, request, f"exception occured attempting to open and READ the config file: {e}")
     
     def write_update_config(self, config, request):
+        """Writes configurations to file. This will create a file if it DNE. This will override the existing file.
+
+        Args:
+            config (_type_): _description_
+            request (_type_): _description_
+        """
         configPath=Path(os.path.join(Path.home(), "Documents/.jkpy/config.txt"))
         configPath.parent.mkdir(parents=True, exist_ok=True)
         

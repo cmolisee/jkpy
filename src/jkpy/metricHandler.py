@@ -1,25 +1,24 @@
-"""jkpy metricHandler"""
-# jkpy/metricHandler.py
-
-import traceback
-import pandas as pd
-
 from jkpy.jiraHandler import JiraHandler
 from jkpy.utils import convert_seconds, has_duplicate, sys_exit
+import pandas as pd
+import numpy as np
+import traceback
 
 class MetricHandler(JiraHandler):
-    """MetricHandler(JiraHandler)
-    
-    Concrete implementation of the JiraHandler interface.
-    Responsible for building metrics from response objects.
+    """Builds metrics based on issue datasets.
+
+    Args:
+        JiraHandler (_type_): _description_
     """
 
     def handle(self, request):
-        """MetricHandler(JiraHandler).hanlde(self, request)
-        
-        Concrete implementation of the handle() method from JiraHandler.
-        Processes all response objects to build metrics.
-        Dependent on responseList from requestHandler().
+        """Handler implementation.
+
+        Args:
+            request (_type_): _description_
+
+        Returns:
+            _type_: _description_
         """
 
         request.log("MetricHandler().handle().")
@@ -28,9 +27,6 @@ class MetricHandler(JiraHandler):
 
         if not request.responseList:
             sys_exit(1, request, "request.responseList DNE.")
-
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-        # months
 
         metricsList=[]
         fullDataset=[]
@@ -72,9 +68,6 @@ class MetricHandler(JiraHandler):
                 })
                 fullDataset.extend(responseObject.get("issues", []))
 
-            # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-            # annual
-
             keys=list(map(lambda obj: obj.get("fields").get("key"), fullDataset))
             duplicates=has_duplicate(keys)
             if len(duplicates) > 0:
@@ -115,26 +108,54 @@ class MetricHandler(JiraHandler):
 
         except Exception:
             sys_exit(1, request, f"exception occured building metrics from response data: {traceback.format_exc()}")
-        
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
         request.fullDataset=fullDataset
         request.metricsList=metricsList
-
         return super().handle(request)
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-
     def get_dataset_stats(self, dataset: pd.DataFrame, datasetName: str, datasetType: str, request):
+        """Parses the dataset using the provided arguments to produce metrics.
+
+        Args:
+            dataset (pd.DataFrame): _description_
+            datasetName (str): _description_
+            datasetType (str): _description_
+            request (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         stats={
             "datasetName": datasetName,
             "totalIssues": dataset.shape[0],
         }
 
         if stats.get("totalIssues") > 0:
+            primaryDevDf=dataset
+            if datasetType == "name":
+                displayName=datasetName.replace("-", " ")
+                # filter the dataset for issues where this dev is the primary
+                # print(f"displayName: {displayName}")
+                for index, row in dataset.iterrows():
+                    print(f"key: {row["key"]}")
+                    print(f"dev: {row["fields.customfield_10264"]}")
+                    print(f"dev type: {type(row["fields.customfield_10264"])}")
+                # print(f"is customfield_10264: {dataset["fields.customfield_10264.displayName"].notna()}")
+                # filterCondition = (
+                #     dataset["fields.customfield_10264"].isna() or
+                #     (dataset["fields.customfield_10264"].empty()) or
+                #     dataset["fields.customfield_10264.displayName"].apply(lambda x: displayName in x)
+                #     # (dataset["fields.customfield_10264"].notna() & (displayName in dataset["fields.customfield_10264.displayName"]))
+                # )
+                primaryDevDf=dataset[dataset["fields.customfield_10264"].apply(lambda x: 
+                    pd.isna(x) or
+                    x == '' or
+                    (isinstance(x, dict) and displayName in x.get('displayName'))
+                )]
+
             stats["storyPointSum"]=dataset["fields.customfield_10028"].sum()
             stats["totalTimeSpent"]=convert_seconds(seconds=dataset["fields.timespent"].sum())
-            stats["totalNoTrackging"]=dataset["fields.timespent"].isna().sum()
+            stats["totalNoTracking"]=dataset["fields.timespent"].isna().sum()
             stats["totalEnhancement"]=dataset[dataset["fields.labels"].apply(lambda x: "Enhancement" in x)].shape[0]
             stats["totalBugs"]=dataset[dataset["fields.labels"].apply(lambda x: "Bug" in x)].shape[0]
             stats["totalDefects"]=dataset[dataset["fields.labels"].apply(lambda x: "Defect" in x)].shape[0]
@@ -145,11 +166,14 @@ class MetricHandler(JiraHandler):
             stats["totalThreePointers"]=dataset["fields.customfield_10028"].apply(lambda x: x == 3).sum()
             stats["totalFivePointers"]=dataset["fields.customfield_10028"].apply(lambda x: x == 5).sum()
             # calculated
-            stats["storyPointAverage"]=round(dataset["fields.customfield_10028"])
-            stats["noTrackingDeficit"]=round((stats.get("totalNoTrackging") / stats.get("totalIssues")) * 100, 3)
+            stats["storyPointAverage"]=round(dataset["fields.customfield_10028"].mean())
+            stats["noTrackingDeficit"]=round((stats.get("totalNoTracking") / stats.get("totalIssues")) * 100, 3)
             # metrics by labels
             for metricLabel in request.metricLabels:
-                stats[metricLabel]=dataset[dataset["fields.labels"].apply(lambda x: metricLabel in x)].shape[0]
+                if primaryDevDf.empty:
+                    stats[metricLabel]=0
+                else:
+                    stats[metricLabel]=primaryDevDf[primaryDevDf["fields.labels"].apply(lambda x: metricLabel in x)].shape[0]
             # run additional stats if nameLabels exists
             # primarily for quarterly and annual metrics
             if datasetType == "quarter" or datasetType == "annual":
@@ -157,4 +181,3 @@ class MetricHandler(JiraHandler):
                 stats["noNameLabel"]=dataset["fields.customfield_10235.value"].apply(lambda x: any(str(x) in n for n in request.nameLabels)).sum()
     
         return stats
-    

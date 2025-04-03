@@ -10,7 +10,8 @@ dependencies=[
     "requests",
     "pandas",
     "openpyxl",
-    "python-dateutil"
+    "python-dateutil",
+    "click"
 ]
 requires-python=">=3.8"
 
