@@ -134,23 +134,9 @@ class MetricHandler(JiraHandler):
             primaryDevDf=dataset
             if datasetType == "name":
                 displayName=datasetName.replace("-", " ")
-                # filter the dataset for issues where this dev is the primary
-                # print(f"displayName: {displayName}")
-                for index, row in dataset.iterrows():
-                    print(f"key: {row["key"]}")
-                    print(f"dev: {row["fields.customfield_10264"]}")
-                    print(f"dev type: {type(row["fields.customfield_10264"])}")
-                # print(f"is customfield_10264: {dataset["fields.customfield_10264.displayName"].notna()}")
-                # filterCondition = (
-                #     dataset["fields.customfield_10264"].isna() or
-                #     (dataset["fields.customfield_10264"].empty()) or
-                #     dataset["fields.customfield_10264.displayName"].apply(lambda x: displayName in x)
-                #     # (dataset["fields.customfield_10264"].notna() & (displayName in dataset["fields.customfield_10264.displayName"]))
-                # )
+                
                 primaryDevDf=dataset[dataset["fields.customfield_10264"].apply(lambda x: 
-                    pd.isna(x) or
-                    x == '' or
-                    (isinstance(x, dict) and displayName in x.get('displayName'))
+                    pd.isna(x) or x == '' or (displayName in x)
                 )]
 
             stats["storyPointSum"]=dataset["fields.customfield_10028"].sum()
