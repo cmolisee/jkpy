@@ -1,28 +1,148 @@
 [build-system]
-requires=["setuptools"]
+requires=["setuptools>=75.0.0"]
 build-backend="setuptools.build_meta"
 
 [project]
 name="jkpy"
-dynamic=["version"]
+authors=[{name="Cody Molisee"}]
+description="JIRA metric script for teams"
+version="0.1.0"
+requires-python=">=3.9"
+readme="README.md"
+license={text="MIT"}
 dependencies=[
-    "typer>=0.9.0",
-    "requests",
-    "pandas",
-    "openpyxl",
-    "python-dateutil",
-    "click"
+    "textual>=0.86.2",
+    "requests>=2.25.0",
+    "polars>=1.0.0",
+    "xlsxwriter",
 ]
-requires-python=">=3.8"
+
 
 [project.optional-dependencies]
-test=[]
+dev=[
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "ruff>=0.6.0",
+    "mypy>=1.11.0",
+    "pylint>=3.2.0",
+    "types-requests>=2.32.0",
+    "pre-commit>=3.5.0",
+    "build>=1.0.0"
+]
+test=[
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+]
+lint=[
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "ruff>=0.6.0",
+    "mypy>=1.11.0",
+    "pylint>=3.2.0",
+    "types-requests>=2.32.0",
+]
+
+[project.urls]
+Homepage="https://github.com/cmolisee/jkpy"
+Documentation="https://github.com/cmolisee/jkpy/blob/main/README.md"
+Repository="https://github.com/cmolisee/jkpy"
+Issues="https://github.com/cmolisee/jkpy/issues"
 
 [project.scripts]
-jkpy="jkpy.cli:app"
+jkpy="jkpy.cli:main"
 
-[tool.setuptools]
-package-dir={""="src"}
+[tool.setuptools.packages.find]
+where=["src"]
 
-[tool.setuptools.dynamic]
-version={attr="jkpy.__version__"}
+[tool.semantic_release]
+version_toml=["pyproject.toml:project.version"]
+branch="main"
+changelog_file="CHANGELOG.md"
+dist_path="dist/"
+upload_to_pypi=false
+upload_to_release=true
+build_command="python -m build"
+
+[tool.semantic_release.commit_parser_options]
+allowed_tags=["major", "breaking", "feat","fix","docs","style","refactor","test","wip","chore","ci"]
+minor_tags=["feat"]
+patch_tags=["fix", "ci", "docs", "style", "test", "chore"]
+# BREAKING CHANGE - in body will also trigger major version bump
+major_tabs=["major", "breaking"]
+
+[tool.semantic_release.changelog]
+exclude_commit_patterns=[
+    "^wip\\(release\\):",
+    "^Merge pull request",
+]
+
+[tool.black]
+line-length=100
+target-version=["py39"]
+extend-exclude='''
+/(
+    #directories
+    \.eggs
+    | \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | build
+    | dist
+)/
+| pyproject\.toml
+'''
+
+[tool.isort]
+profile="black"
+line-length=100
+extend_skip=["pyproject.toml"]
+
+[tool.ruff]
+line-length=100
+target-version="py39"
+extend-exclude=["pyproject.toml"]
+
+[tool.ruff.lint]
+select=["E","W","F","I","C","B","UP"]
+ignore=["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py"=["F401"] # unused imports
+
+[tool.pytest.ini_options] 
+addopts=[ 
+    "-ra",
+    "--cov=jkpy",
+    "--cov-report=term-missing", 
+    "--cov-report=html", 
+    "--cov-report=xml", 
+]
+
+[tool.mypy] 
+python_version="3.9" 
+warn_return_any=true
+warn_unused_configs=true
+disallow_untyped_defs=true
+disallow_incomplete_defs=true
+check_untyped_defs=true
+no_implicit_optional=true
+warn_redundant_casts=true
+warn_unused_ignores=true
+warn_no_return=true
+strict_equality=true
+exclude=["pyproject.toml"]
+
+[[tool.mypy.overrides]]
+disallow_untyped_defs=false
+
+[tool.pylint.messages_control] 
+disable=[ "C0111","C0103","R0903"] 
+
+[tool.pylint.format] 
+max-line-length=100
