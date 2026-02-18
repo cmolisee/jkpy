@@ -1,10 +1,9 @@
-from jkpy.configuration import ConfigurationType
-from jkpy.configuration import Configuration
-from jkpy.handlers.issues_handler import IssuesHandler
-from jkpy.handlers.accounts_handler import AccountsHandler
-from jkpy.handlers.validate_developer_handler import ValidateDeveloperHandler
-from jkpy.handlers.filter_handler import FilterHandler
-from jkpy.handlers.date_transformations_handler import DateTransformationsHandler
+from jkpy.handlers.request_issues_handler import RequestIssuesHandler
+from jkpy.handlers.request_accounts_handler import RequestAccountsHandler
+from jkpy.handlers.pre_filter_handler import PreFilterHandler
+from jkpy.handlers.preprocessing_date_handler import PreprocessingDateHandler
+from jkpy.handlers.preprocessing_team_labels_handler import PreprocessingTeamLabelsHandler
+from jkpy.handlers.validate_primary_dev_handler import ValidatePrimaryDeveloperHandler
 from jkpy.handlers.grouping_handler import GroupingHandler
 from jkpy.handlers.aggregation_handler import AggregationHandler
 from jkpy.handlers.excel_output_handler import ExcelOutputHandler
@@ -19,29 +18,34 @@ class Handlers:
         # TODO: make sure all access to dict or tuples is done with ["key"] and not the dot accessor
         
         # TODO: clean out unsued/commented code
-        # TODO: remove proceed flag
         # TODO: make sure Configurations are initialized as needed
+        # TODO: remove warning from requests
+        # TODO: Modify output
+            # when selecting an option prompt user to choose if they would like to exit (y/n)
+                # if yes, clear the options, print and exit
+                # if no, collect output to a queue for printing on exit
+            # on exit, clear the options, print the logs/queue
+              
+        request_issues_handler=RequestIssuesHandler()
+        request_accounts_handler=RequestAccountsHandler()
+        pre_filter_handler=PreFilterHandler()
+        preprocessing_date_handler=PreprocessingDateHandler()
+        preprocessing_team_labels_handler=PreprocessingTeamLabelsHandler()
+        validate_primary_dev_handler=ValidatePrimaryDeveloperHandler()
+        grouping_handler=GroupingHandler()
+        aggregation_handler=AggregationHandler()
+        excel_output_handler=ExcelOutputHandler()
         
-        # take the cmd args, update from the saved configs, 
-        # and return a full config object include saved configs        
-        issues_handler=IssuesHandler() # get all issues
-        accounts_handler=AccountsHandler() # get all dpm accounts
-        validate_dev_handler=ValidateDeveloperHandler() # validate issues have primary dev
-        date_transformation_handler=DateTransformationsHandler() # transform statuscategorychangedate for consumption
-        filter_handler=FilterHandler() # filter all issues not in green status
-        grouping_handler=GroupingHandler() # group issues by team and member
-        aggregation_handler=AggregationHandler() # aggregate metrics on grouping
-        excel_output_handler=ExcelOutputHandler() # write to output
-        
-        issues_handler.set_next(accounts_handler) \
-            .set_next(validate_dev_handler) \
-            .set_next(date_transformation_handler) \
-            .set_next(filter_handler) \
+        request_issues_handler.set_next(request_accounts_handler) \
+            .set_next(pre_filter_handler) \
+            .set_next(preprocessing_date_handler) \
+            .set_next(preprocessing_team_labels_handler) \
+            .set_next(validate_primary_dev_handler) \
             .set_next(grouping_handler) \
             .set_next(aggregation_handler) \
             .set_next(excel_output_handler)
 
-        return issues_handler
+        return request_issues_handler
     
 __all__=[
     "Handlers"

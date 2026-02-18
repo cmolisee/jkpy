@@ -25,8 +25,11 @@ statuses=""
 labels=""
 start=""
 end=""
+host=""
 
 .PHONY: help venv install
+
+.DEFAULT_GOAL := help
 
 ##@ >>> Installation Targets
 help: ## Display information for each run target
@@ -69,6 +72,7 @@ clean: ## Remove all artifacts, cache, virtual environment, etc...
 	find . -type f -name '*.pyc' -delete
 	find . -type f -name '*.pyo' -delete
 	find . -type f -name '*.egg' -delete
+	find . -type d -name '*.egg-info' -exec rm -rf {} +
 	@printf "$(GREEN)>>> Cleanup complete$(NC)\n"
 test: ## Run tests (all files with *_test.py)
 	@printf "$(CYAN)>>> Running tests...$(NC)\n"
@@ -101,70 +105,52 @@ type-check: ## Run type checking
 
 ##@ >>> Setup and Configurations Targets
 config: ## Show Configurations
-	@printf "$(CYAN)%60s$(NC)\n" | tr " " "="
-	@printf "$(CYAN)>>> Configurations:$(NC)\n"
-	@printf "$(CYAN)%60s$(NC)\n" | tr " " "="
-	@printf "${YELLOW}"
 	@$(VENV_APP) --config | $(VENV_PYTHON) -m json.tool
-	@printf "${NC}"
 email: ## Set Jira email config
 ### make email --email=john.doe@gmail.com
-	@printf "$(CYAN)>>> Setting %s configuration: %s\n" "email" "$(email)"
 	$(VENV_APP) --email $(email)
 token: ## Set Jira token config
 ### make token --token=AAB1213DWELK...
-	@printf "$(CYAN)>>> Setting %s configuration: %s\n" "token" "$(token)"
 	$(VENV_APP) --token $(token)
 path: ## Set output path
 ### make path --path=~/Documents/jkpy
-	@printf "$(CYAN)>>> Setting %s configuration: %s\n" "path" "$(path)"
 	$(VENV_APP) --path $(path)
 members: ## Set members by member name (e.g. John Doe)
 ### make members --members="John Doe","Dohn Joe",etc...
-	@printf "$(CYAN)>>> Setting %s configuration: %s\n" "members" "$(members)"
 	$(VENV_APP) --members $(members)
 teams: ## Set teams by team name (e.g. ABC-TEAM-ONE)
 ### make teams --teams=ABC-team-one,ABC-team-two
-	@printf "$(CYAN)>>> Setting %s configuration: %s\n" "teams" "$(teams)"
 	$(VENV_APP) --teams $(teams)
 statuses: ## Set statuses by status type (e.g. "in development")
 ### make statuses --statuses="in development","in qa",done,...
-	@printf "$(CYAN)>>> Setting %s configuration: %s\n" "statuses" "$(statuses)"
 	$(VENV_APP) --statuses $(statuses)
 labels: ## Set labels for targeted metrics (e.g. "a/b test")
 ### make labels --labels="a/b test","rollover",etc...
-	@printf "$(CYAN)>>> Setting %s configuration: %s\n" "labels" "$(labels)"
 	$(VENV_APP) --labels $(labels)
 start: ## Set start date for target dataset
 ### make start --start=2026-01-01
-	@printf "$(CYAN)>>> Setting %s configuration: %s\n" "target start date" "$(start)"
 	$(VENV_APP) --start $(start)
 end: ## Set end date for target dataset
 ### make end --end=2026-02-01
-	@printf "$(CYAN)>>> Setting %s configuration: %s\n" "target end date" "$(end)"
 	$(VENV_APP) --end $(end)
 range: ## Set date range for target dataset
 ### make range --start=2026-01-01 --end=2026-02-01
-	@printf "$(CYAN)>>> Setting %s configuration: %s - %s\n" "target date range" "$(start)" "$(end)"	
 	$(VENV_APP) --start $(start) --end $(end)
+host: ## Set the Jira API host
+	$(VENV_APP) --host $(host)
 remove-members: ## Remove member(s)
 ### make remove-members --members="john doe"
-	@printf "$(CYAN)>>> Removing %s from %s configuration\n" "$(members)" "members"
 	$(VENV_APP) --remove-members $(members)
 remove-teams: ## Remove team(s)
 ### make remove-teams --members=ABC-team-one
-	@printf "$(CYAN)>>> Removing %s from %s configuration\n" "$(teams)" "teams"
 	$(VENV_APP) --remove-teams $(teams)
 remove-statuses: ## Remove status(es)
 ### make remove-statuses --statuses=done
-	@printf "$(CYAN)>>> Removing %s from %s configuration\n" "$(statuses)" "statuses"
 	$(VENV_APP) --remove-statuses $(statuses)
 remove-labels: ## Remove label(s)
 ### make remove-labels --labels="rollover"
-	@printf "$(CYAN)>>> Removing %s from %s configuration\n" "$(labels)" "labels"
 	$(VENV_APP) --remove-labels $(labels)
 
 ##@ >>> Run Targets
 run: ## Run application
-	@printf "$(CYAN)>>> Running Application$(NC)"
 	$(VENV_APP)

@@ -11,7 +11,6 @@ requires-python=">=3.9"
 readme="README.md"
 license={text="MIT"}
 dependencies=[
-    "textual>=0.86.2",
     "requests>=2.25.0",
     "polars>=1.0.0",
     "xlsxwriter",
@@ -53,7 +52,7 @@ Repository="https://github.com/cmolisee/jkpy"
 Issues="https://github.com/cmolisee/jkpy/issues"
 
 [project.scripts]
-jkpy="jkpy.cli:main"
+jkpy="jkpy.__main__:main"
 
 [tool.setuptools.packages.find]
 where=["src"]
