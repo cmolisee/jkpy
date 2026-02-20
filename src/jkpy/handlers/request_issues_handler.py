@@ -12,7 +12,8 @@ from jkpy.utils import Print
 
 class RequestIssuesHandler(Handler):
     def process(self, model: 'AppModel', view: 'AppView') -> None:
-        Print.green(f"Collecting Jira issues...")
+        title="Collecting Jira issues >"
+        print(title + view.line_break()[len(title):])
         
         query: str=self.get_jql_query(model, view)
         all_issues: Dict[str, Any]=self.get_all_issues(query, model, view)
@@ -20,16 +21,19 @@ class RequestIssuesHandler(Handler):
         
         model.data["originaldata"]=df
         model.data["tempdata"].append(df)
-        
-        Print.green(f"All issues received\n")
     
     def get_jql_query(self, model: 'AppModel', view: 'AppView') -> str:
         jql_parts: List[str]=[f"("]
-        # labels
-        jql_parts.append(f"(labels in ({",".join([f"'{label}'" for label in model.data["labels"]])}))")
-        # teams
+        # labels or teams
+        jql_parts.append(f"(labels in ({",".join([f"'{label}'" for label in model.data["members"]])}))")
         jql_parts.append(f" OR ")
         jql_parts.append(f"('Team Name[Dropdown]' in ({",".join([f"'{team}'" for team in model.data["teams"]])})))")
+        # labels to ignore
+        jql_parts(f" AND ")
+        jql_parts(f" labels not in ({",".join([f"'{label}'" for label in model.data["ignore_labels"]])})")
+        # ticket types
+        jql_parts.append(f" AND ")
+        jql_parts.append(f"type in (Story, Task, Bug, Enhancement)")
         # statuses
         jql_parts.append(f" AND ")
         jql_parts.append(f"status CHANGED TO ({",".join([f"'{status}'" for status in model.data["statuses"]])})")
@@ -37,17 +41,17 @@ class RequestIssuesHandler(Handler):
         jql_parts.append(f" AFTER {model.data["start"].strftime("%Y-%m-%d")} BEFORE {model.data["end"].strftime("%Y-%m-%d")}")
         
         jql="".join(jql_parts)
-        Print.green("Jira Query:")
-        Print.green(jql)
+        print(">>> Building JQL...")
         
         return jql
     
     def get_all_issues(self, query: str, model: 'AppModel', view: 'AppView') -> Dict[str, Any]:
         all_issues: List[Dict[str, Any]]=[]
-        max_results: int=150
         nextPageToken: str=None
+        idx=1
         
         while True:
+            print(f">>> [Request {idx}]...")
             response: requests.Response=requests.request(
                 method="POST",
                 url=f"{model.data["host"]}/rest/api/3/search/jql",
@@ -58,7 +62,7 @@ class RequestIssuesHandler(Handler):
                 },
                 data=json.dumps({
                     "jql": query,
-                    "maxResults": max_results,
+                    "maxResults": 150, # API may return fewer
                     "nextPageToken": nextPageToken,
                     "fields": ["*all"]
                 }, cls=DateTimeEncoder),
@@ -69,11 +73,14 @@ class RequestIssuesHandler(Handler):
                 raise Exception("/rest/api/3/search/jql", f"status code: {response.status_code}", f"reason: {response.reason}")
             
             responsedata: Dict[str, Any]=response.json()
+            nextPageToken=responsedata.get("nextPageToken", None)
             issues: List[Dict[str, Any]]=responsedata.get("issues", [])
             all_issues.extend(issues)
-            Print.green(f"{len(all_issues)} issues...")
+            idx+=1
             
-            if responsedata.get("isLast") or responsedata.get("nextPageToken") is None:
+            if responsedata.get("isLast", False) or nextPageToken is None:
+                Print.green(f">>> All issues collected")
+                Print.green(f">>> Rows: {len(all_issues)} \tColumns: {len(all_issues[0].keys())}\n")
                 break
         
         return all_issues

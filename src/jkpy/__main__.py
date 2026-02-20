@@ -1,15 +1,28 @@
 from datetime import date
 import argparse
-from jkpy.app_mvc import AppModel
-from jkpy.app_mvc import AppView
-from jkpy.app_mvc import AppController
-from jkpy.services import run_application
-from jkpy.services import show_configurations
-from jkpy.services import edit_configurations
-from jkpy.services import show_help
-from jkpy.services import exit_application
+from jkpy.mvc.menu import AppModel
+from jkpy.mvc.menu import AppView
+from jkpy.mvc.menu import AppController
+from jkpy.callbacks import run_application
+from jkpy.callbacks import show_configurations
+from jkpy.callbacks import edit_configurations
+from jkpy.callbacks import show_help
+from jkpy.callbacks import exit_application
 from jkpy.utils import Print
 from functools import partial
+import requests
+from urllib3.exceptions import InsecureRequestWarning
+import polars as pl
+
+# disable warning for 
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+pl.Config.set_fmt_str_lengths(1000)             # Character limit for string columns
+pl.Config.set_tbl_cols(-1)                      # -1 shows all columns
+pl.Config.set_tbl_rows(-1)                      # -1 shows all rows
+pl.Config(tbl_formatting="UTF8_FULL")           # border on all row/column
+pl.Config.set_tbl_hide_column_names(True)       # hide header row name
+pl.Config.set_tbl_hide_column_data_types(True)  # hide header row data type
 
 def parse_args():
     parser=argparse.ArgumentParser(
@@ -63,6 +76,12 @@ def parse_args():
         nargs="*",
         help="Target labels configuration"
     )
+    
+    parser.add_argument(
+        "--ignore-labels",
+        nargs="*",
+        help="Target labels to ignore configuration"
+    )
 
     parser.add_argument(
         "--start",
@@ -97,6 +116,12 @@ def parse_args():
         "--remove-statuses",
         nargs="*",
         help="Remove status(es) from configuration"
+    )
+    
+    parser.add_argument(
+        "--remove-ignore-labels",
+        nargs="*",
+        help="Remove to ignore labels configuration"
     )
 
     parser.add_argument(
@@ -134,7 +159,7 @@ def main():
     try:
         controller.run()
     except KeyboardInterrupt:
-        exit_application()
+        exit_application(model, view)
     
 if __name__=="__main__":
     main()

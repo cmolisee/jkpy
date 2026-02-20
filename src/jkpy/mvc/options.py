@@ -1,18 +1,19 @@
+from __future__ import annotations
 from typing import List
 from typing import Any
 from typing import Optional
 import sys
 import tty
 import termios
-from jkpy.utils import Print
+from jkpy.utils import Ansi
 
-class PromptModel:
-    def __init__(self, header: str, options: List[str]):
-        self.header=header
+class OptionsModel:
+    def __init__(self, prompt: str, options: List[str]):
+        self.prompt=prompt
         self.options=options
         self.selected=0
         self.result=None
-        self.is_active=True
+        self.is_running=True
         self._observers=[]
         
     def add_observer(self, observer) -> None:
@@ -22,53 +23,58 @@ class PromptModel:
         for observer in self._observers:
             observer.update()
         
-    def select_previous(self):
+    def select_previous(self) -> None:
         self.selected=(self.selected-1)%len(self.options)
+        self.notify_observers()
         
-    def select_next(self):
+    def select_next(self) -> None:
         self.selected=(self.selected+1)%len(self.options)
+        self.notify_observers()
         
-    def confirm_selection(self):
+    def confirm_selection(self) -> None:
         self.result=self.options[self.selected]
-        self.is_active=False
         
-    def cancel(self):
-        self.result=None
-        self.is_active=False
+    def stop(self):
+        self.is_running=False
         
-class PromptView:
-    def __init__(self, model: PromptModel):
-        self.model=model
-        self.is_first_render=True
-        self.update_lines=0
+class OptionsView:
+    def __init__(self, model: OptionsModel):
+        self.model: OptionsModel=model
+        self.is_first_render: bool=True
+        self.lines_to_overwrite: int=0
+    
+    def clear(self) -> None:
+        for _ in range(self.lines_to_overwrite):
+            sys.stdout.write(Ansi.up(1)) 
+            sys.stdout.write(Ansi.erase_line()) 
+        sys.stdout.flush()
         
     def update(self):
         self.render()
         
     def render(self):
-        self.update_lines=len(self.model.options)+len(self.model.header.splitlines)
+        self.lines_to_overwrite=len(self.model.options)+len(self.model.header.splitlines())
         
         if not self.is_first_render:
-            print(f"\033[{self.update_lines}A", end="")
+            self.clear()
             
-        print(f"{Print.YELLOW} \033[K self.model.prompt_header {Print.nc}")
-        
+        sys.stdout.write(self.model.prompt+"\n")
         for idx, opt in enumerate(self.model.options):
             if idx==self.model.selected:
-                print(f"\033[K >{Print.CYAN}{opt}{Print.NC}<")
+                sys.stdout.write(f">{Ansi.CYAN}{opt}{Ansi.RESET}<")
             else:
-                print(f"\033[K  {Print.CYAN}{opt}{Print.NC}")
+                sys.stdout.write(f" {Ansi.CYAN}{opt}{Ansi.RESET}")
         
-        print("\033[K",end="",flush=True)
+        sys.stdout.flush()
         self.is_first_render=False
+    
+    def reset(self):
+        self.is_first_render=True
         
-    def render_confirmation(self):
-        input(f"{self.header} (Y/n)?")
-        
-class PromptController:
-    def __init__(self, model: PromptModel, view: PromptView):
-        self.model=model
-        self.view=view
+class OptionsController:
+    def __init__(self, model: OptionsModel, view: OptionsView):
+        self.model: OptionsModel=model
+        self.view: OptionsView=view
 
     def get_key(self) -> str|Any:
         fd = sys.stdin.fileno()
@@ -84,34 +90,42 @@ class PromptController:
             return ch
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-    
+        
     def handle_input(self, key: str):
         if key=="\x1b[A":
             self.model.select_previous()
         elif key=="\x1b[B":
             self.model.select_next()
         elif key=="\n" or key=="\r":
-            self.confirm_selection()
-        elif key=="c" or key=="C":
-            self.model.cancel()
+            self.model.confirm_selection()
+            self.model.stop()
+        elif key=="q" or key=="Q":
+            self.model.stop()
             
     def run(self) -> Optional[str]:
         self.view.render()
-        
-        while self.model.is_active:
+        while self.model.is_running:
             key=self.get_key()
             self.handle_input(key)
             
-            return self.model.result
+        return self.model.result
 
-def show_options_prompt(header: str, options: List[str]) -> Optional[str]:
-    model=PromptModel(header, options)
-    view=PromptView(model)
-    controller=PromptController(model, view)
-    
-    model.add_observer(view)
-    
-    return controller.run()
+class Options:
+    @staticmethod
+    def select(prompt: str, options: List[str]) -> Optional[str]:
+        model=OptionsModel(prompt, options)
+        view=OptionsView(model)
+        controller=OptionsController(model, view)
+        
+        model.add_observer(view)
+        try:
+            return controller.run()
+        except KeyboardInterrupt:
+            model.stop()
+
+
+
+
 
 def confirm(question: str) -> bool:
     print(f"{question} (y/n)", end="", flush=True)
@@ -123,17 +137,23 @@ def confirm(question: str) -> bool:
             tty.setraw(fd)
             while True:
                 ch=sys.stdin.read(1).lower()
-                if ch in ('y', 'n', '\x1b'):
+                if ch in ("y", "n", "\n", "\r"):
                     return ch
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-            
-    key=read_yn()
-    print()
-    return key=='y'
+    
+    while True:        
+        key=read_yn()
+        if key=="y":
+            selected=True
+        if key=="n":
+            selected=False
+        if key in ("\n", "\r"):
+            return selected
 
 def text_input(question: str, default: str="") -> Optional[str]:
-    Print.yellow("'enter' to confirm, 'escape' to cancel")
+    print(f"\x1b[1A", end="")
+    Print.yellow("\x1b[K'enter' to confirm, 'escape' to cancel")
     print(question)
     # print("\x1b[1A") # cursor up 1 line
     # print("\x1b[3C") # cursor right 3 characters
@@ -147,7 +167,7 @@ def text_input(question: str, default: str="") -> Optional[str]:
             while True:
                 ch=sys.stdin.read(1)
                 if ch=="\x1b":
-                    ch2=sys.stdn.read(1)
+                    ch2=sys.stdin.read(1)
                     if ch2=="[":
                         sys.stdin.read(1)
                         continue
@@ -175,7 +195,7 @@ def text_input(question: str, default: str="") -> Optional[str]:
 def multiselect(question: str, options: List[str]) -> List[str]:
     selected=set()
     current=0
-    is_active=True
+    is_running=True
     result=None
     
     def render():
@@ -183,7 +203,7 @@ def multiselect(question: str, options: List[str]) -> List[str]:
         if render.is_first_render:
             render.is_first_render=False
         else:
-            print(f"\033[{lines}A", end="")
+            print(f"\x1b[{lines}A", end="")
             
         Print.yellow("Use UP/DOWN arrows to navigate, 'space' to toggle selection, 'enter' to confirm, and 'c' to cancel")
         print(question)
@@ -191,9 +211,9 @@ def multiselect(question: str, options: List[str]) -> List[str]:
         for idx, opt in enumerate(options):
             checkbox="[■]" if idx in selected else "[ ]"
             if idx==selected:
-                print(f"\033[K {checkbox} >{opt}<")
+                print(f"\x1b[K {checkbox} >{opt}<")
             else:
-                print(f"\033[K {checkbox} {opt}")
+                print(f"\x1b[K {checkbox} {opt}")
         
         render.is_first_render=True
         
@@ -215,7 +235,7 @@ def multiselect(question: str, options: List[str]) -> List[str]:
         print()
         render()
         
-        while is_active:
+        while is_running:
             key=get_key()
             
             if key=="\x1b[A":
@@ -230,10 +250,10 @@ def multiselect(question: str, options: List[str]) -> List[str]:
                 render()
             elif key=="\n" or key=="\r":
                 result=[options[i] for i in sorted(selected)]
-                is_active=False
+                is_running=False
             elif key=="c" or key=="C":
                 result=[]
-                is_active=False
+                is_running=False
     
     print()
     return result

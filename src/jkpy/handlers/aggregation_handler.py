@@ -8,28 +8,29 @@ from jkpy.utils import Print
 
 class AggregationHandler(Handler):
     def process(self, model: 'AppModel', view: 'AppView') -> None:
-        view.print_terminal("Aggregating results...\n", Print.GREEN)
+        title="Aggregating results >"
+        print(title + view.line_break()[len(title):])
         
         aggregators=[]
-        view.print_terminal("Calculating total issues...\n", Print.GREEN)
+        print(">>> Calculating total issues...")
         aggregators.append(self.total_issues_expression())
-        view.print_terminal("Summing story points...\n", Print.GREEN)
+        print(">>> Summing story points...")
         aggregators.append(self.story_point_sum_expression())
-        view.print_terminal("Counting time spent...\n", Print.GREEN)
+        print(">>> Counting time spent...")
         aggregators.append(self.total_time_spent_expression())
-        view.print_terminal("Checking missed time tracking\n", Print.GREEN)
+        print(">>> Checking missed time tracking")
         aggregators.append(self.total_no_work_logged_expression())
-        view.print_terminal("Getting total enhancements\n", Print.GREEN)
+        print(">>> Getting total enhancements")
         aggregators.append(self.total_enhancements_expression())
-        view.print_terminal("Getting total bugs\n", Print.GREEN)
+        print(">>> Getting total bugs")
         aggregators.append(self.total_bugs_expression())
-        view.print_terminal("getting total defects\n", Print.GREEN)
+        print(">>> getting total defects")
         aggregators.append(self.total_defects_expression())
-        view.print_terminal("getting total spikes\n", Print.GREEN)
+        print(">>> getting total spikes")
         aggregators.append(self.total_spikes_expression())
-        view.print_terminal("Aggregating average story points\n", Print.GREEN)
+        print(">>> Aggregating average story points")
         aggregators.append(self.story_point_average_expression())
-        view.print_terminal("Calculating missed time tracking deficit\n", Print.GREEN)
+        print(">>> Calculating missed time tracking deficit")
         aggregators.append(self.time_tracking_deficit_expression())
         
         labels_aggregators=self.sums_by_label_expressions(model)
@@ -38,9 +39,9 @@ class AggregationHandler(Handler):
         df=model.data["tempdata"][-1].agg(aggregators)
         model.data["tempdata"].append(df)
         
-        view.print_terminal("Data aggregation complete\n", Print.GREEN)
+        Print.green(">>> Data aggregation complete\n")
     
-    def total_issues_aggregator(self) -> IntoExpr | Iterable[IntoExpr]:
+    def total_issues_expression(self) -> IntoExpr | Iterable[IntoExpr]:
         return pl.len().alias('total_issues')
 
     def story_point_sum_expression(self) -> IntoExpr | Iterable[IntoExpr]:

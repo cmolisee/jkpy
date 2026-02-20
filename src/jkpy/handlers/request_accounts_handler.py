@@ -10,19 +10,20 @@ from jkpy.utils import Print
 
 class RequestAccountsHandler(Handler):
     def process(self, model: 'AppModel', view: 'AppView') -> None:
-        view.print_terminal("Collecting Jira account data...\n", Print.GREEN)
+        title="Collecting Jira account data >"
+        print(title + view.line_break()[len(title):])
         
         cached: Set[Tuple[Any, ...]]=["-".join(dict(account)["displayName"]) for account in model.data["accounts"]]
         accounts_to_get: Set[str]=set(model.data["members"]) - set(cached)
         
         for userDisplayName in accounts_to_get:
             account=self.get_user(userDisplayName, model, view)
+            print(f">>> Retrieved account data for {userDisplayName}")
             model.data["accounts"].add(tuple(account))
         
-        view.print_terminal("Jira account data complete\n", Print.GREEN)
+        Print.green(">>> All Jira account data received\n")
     
     def get_user(self, displayName: str, model: 'AppModel', view: 'AppView') -> Dict[str, Any]|None:    
-        view.print_terminal(f"getting account data for: {displayName}\n", Print.GREEN)
         response: requests.Response=requests.get(
             f"{model.data["host"]}/rest/api/3/user/search?query={displayName}",
             auth=HTTPBasicAuth(model.data["email"], model.data["token"]),

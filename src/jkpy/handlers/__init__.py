@@ -1,9 +1,10 @@
 from jkpy.handlers.request_issues_handler import RequestIssuesHandler
 from jkpy.handlers.request_accounts_handler import RequestAccountsHandler
-from jkpy.handlers.pre_filter_handler import PreFilterHandler
+from jkpy.handlers.raw_data_filter import RawDataFilter
 from jkpy.handlers.preprocessing_date_handler import PreprocessingDateHandler
 from jkpy.handlers.preprocessing_team_labels_handler import PreprocessingTeamLabelsHandler
 from jkpy.handlers.validate_primary_dev_handler import ValidatePrimaryDeveloperHandler
+from jkpy.handlers.primary_dev_filter import PrimaryDevFilter
 from jkpy.handlers.grouping_handler import GroupingHandler
 from jkpy.handlers.aggregation_handler import AggregationHandler
 from jkpy.handlers.excel_output_handler import ExcelOutputHandler
@@ -28,19 +29,21 @@ class Handlers:
               
         request_issues_handler=RequestIssuesHandler()
         request_accounts_handler=RequestAccountsHandler()
-        pre_filter_handler=PreFilterHandler()
+        raw_data_filter=RawDataFilter()
         preprocessing_date_handler=PreprocessingDateHandler()
         preprocessing_team_labels_handler=PreprocessingTeamLabelsHandler()
         validate_primary_dev_handler=ValidatePrimaryDeveloperHandler()
+        primary_dev_filter=PrimaryDevFilter()
         grouping_handler=GroupingHandler()
         aggregation_handler=AggregationHandler()
         excel_output_handler=ExcelOutputHandler()
         
         request_issues_handler.set_next(request_accounts_handler) \
-            .set_next(pre_filter_handler) \
+            .set_next(raw_data_filter) \
             .set_next(preprocessing_date_handler) \
             .set_next(preprocessing_team_labels_handler) \
             .set_next(validate_primary_dev_handler) \
+            .set_next(primary_dev_filter) \
             .set_next(grouping_handler) \
             .set_next(aggregation_handler) \
             .set_next(excel_output_handler)

@@ -23,6 +23,7 @@ members=""
 teams=""
 statuses=""
 labels=""
+ignore-labels=""
 start=""
 end=""
 host=""
@@ -138,6 +139,8 @@ range: ## Set date range for target dataset
 	$(VENV_APP) --start $(start) --end $(end)
 host: ## Set the Jira API host
 	$(VENV_APP) --host $(host)
+ignore-labels: ## Set ignore labels
+	$(VENV_APP) --ignore-labels $(host)
 remove-members: ## Remove member(s)
 ### make remove-members --members="john doe"
 	$(VENV_APP) --remove-members $(members)
@@ -150,6 +153,9 @@ remove-statuses: ## Remove status(es)
 remove-labels: ## Remove label(s)
 ### make remove-labels --labels="rollover"
 	$(VENV_APP) --remove-labels $(labels)
+remove-ignore-labels: ## Remove label(s)
+### make remove-ignore-labels --ignore-labels="test"
+	$(VENV_APP) --remove-ignore-labels $(labels)
 
 ##@ >>> Run Targets
 run: ## Run application
