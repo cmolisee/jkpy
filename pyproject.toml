@@ -11,9 +11,10 @@ requires-python=">=3.9"
 readme="README.md"
 license={text="MIT"}
 dependencies=[
-    "requests>=2.25.0",
+    "httpx",
     "polars>=1.0.0",
     "xlsxwriter",
+    "readchar",
 ]
 
 
@@ -27,7 +28,6 @@ dev=[
     "ruff>=0.6.0",
     "mypy>=1.11.0",
     "pylint>=3.2.0",
-    "types-requests>=2.32.0",
     "pre-commit>=3.5.0",
     "build>=1.0.0"
 ]
@@ -42,7 +42,6 @@ lint=[
     "ruff>=0.6.0",
     "mypy>=1.11.0",
     "pylint>=3.2.0",
-    "types-requests>=2.32.0",
 ]
 
 [project.urls]

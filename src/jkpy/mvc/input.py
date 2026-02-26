@@ -3,172 +3,112 @@ from typing import List
 from typing import Any
 from typing import Optional
 import sys
-import tty
-import termios
+from readchar import readkey
+from readchar import key
 from jkpy.utils import Ansi
 
 class InputModel:
-    def __init__(self, prompt):
-        self.prompt=prompt
-        self.result=""
+    def __init__(self, prompt: str) -> None:
+        self.prompt: str=prompt
+        self.result: Optional[str]=""
+        self.is_running: bool=True
+        self._observers: List[Any]=[]
 
-    def set_result(self, text):
-        self.result=text
+    def add_observer(self, observer: Any) -> None:
+        self._observers.append(observer)
+        
+    def notify_observers(self) -> None:
+        for observer in self._observers:
+            observer.update()
 
-    def get_result(self):
-        return self.user_text
+    def get_result(self) -> Optional[str]:
+        return self.result
+    
+    def stop(self) -> None:
+        self.is_running=False
     
 class InputView:
-    def __init__(self, model: InputModel):
+    def __init__(self, model: InputModel) -> None:
         self.model: InputModel=model
+        self.is_first_render: bool=True
+        self.lines_to_overwrite: int=0
+    
+    def clear(self) -> None:
+        # need to do a check if the cursor is on the same line as the text. in which case we don't go up a line but instead to the start of the line...
+        if self.lines_to_overwrite==1:
+            sys.stdout.write("\r")
+            sys.stdout.write(Ansi.erase_line())
+            sys.stdout.flush()
+            return
         
-    def get_user_input(self):
-        return input(f"{self.model.prompt}: ")
+        for _ in range(self.lines_to_overwrite):
+            sys.stdout.write(Ansi.up(1)) 
+            sys.stdout.write(Ansi.erase_line()) 
+        sys.stdout.flush()
+    
+    def update(self) -> None:
+        self.render()
+
+    def render(self) -> None:
+        self.lines_to_overwrite=len(self.model.prompt.splitlines())
+        
+        if not self.is_first_render:
+            self.clear()
+
+        sys.stdout.write(self.model.prompt+" "+str(self.model.result))
+
+        sys.stdout.flush()
+        self.is_first_render=False
+        
+    def reset(self) -> None:
+        self.is_first_render=True
     
 class InputController:
-    def __init__(self, model: InputModel, view: InputView):
+    def __init__(self, model: InputModel, view: InputView) -> None:
         self.model: InputModel=model
         self.view: InputView=view
+
+    def handle_input(self, k: str) -> None:
+        if k in [key.ENTER, key.TAB]: # enter, submit
+            self.model.stop()
+        elif self.model.result and k==key.BACKSPACE: # backspace - delete should not be allowed
+            self.model.result=self.model.result[:-1]
+            self.view.update()
+        elif k.isalnum() or k in [".","\\","/","?","-","&","%",",","\"","'","_","+","=","$","[","]","(",")",":"]: # char, update
+            if not self.model.result:
+                self.model.result=k
+            elif len(self.model.result) < 50:
+                self.model.result+=k
+            self.view.update()
         
     def run(self) -> Optional[str]:
-        txt=self.view.get_user_input()
-        self.model.set_result(txt)
-        return self.model.get_result
+        self.view.render()
+        while self.model.is_running:
+            key=readkey()
+            self.handle_input(key)
+        
+        print()
+        return self.model.result
 
 class Input:
     @staticmethod
     def confirm(question: str) -> bool:
-        model=InputModel(question)
-        view=InputView(model)
-        controller=InputController(model, view)
+        model: InputModel=InputModel(question+" (y/n)")
+        view: InputView=InputView(model)
+        controller: InputController=InputController(model, view)
         
-        # this won't work to intercept cancel/interrupt behavior
-        # unless using ctrl+c
-        # must implement a custom solution with key handler if we want
-        # to use escape key for that... probs not worth it.
         result=controller.run()
-        
-        model.add_observer(view)
-        print(f"{question} (y/n)", end="", flush=True)
-        
-        def read_yn():
-            fd=sys.stdin.fileno()
-            old_settings=termios.tcgetattr(fd)
-            try:
-                tty.setraw(fd)
-                while True:
-                    ch=sys.stdin.read(1).lower()
-                    if ch in ("y", "n", "\n", "\r"):
-                        return ch
-            finally:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        
-        while True:        
-            key=read_yn()
-            if key=="y":
-                selected=True
-            if key=="n":
-                selected=False
-            if key in ("\n", "\r"):
-                return selected
-
-def text_input(question: str, default: str="") -> Optional[str]:
-    def read_text():
-        fd=sys.stdin.fileno()
-        old_settings=termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            text=default
-            while True:
-                ch=sys.stdin.read(1)
-                if ch=="\x1b":
-                    ch2=sys.stdin.read(1)
-                    if ch2=="[":
-                        sys.stdin.read(1)
-                        continue
-                    else:
-                        return None
-                elif ch=="\n" or ch=="\r":
-                    return text
-                elif ch=="\x7f":
-                    if text:
-                        text=text[:-1]
-                        print("\b\b", end="", flush=True)
-                elif ch=="\x03":
-                    raise KeyboardInterrupt
-                elif ord(ch) >= 32 and ord(ch) < 127:
-                    if len(text) < 50:
-                        text+=ch
-                        print(ch, end="", flush=True)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-            
-    result=read_text()
-    print()
-    return result if result else None
-    
-def multiselect(question: str, options: List[str]) -> List[str]:
-    selected=set()
-    current=0
-    is_running=True
-    result=None
-    
-    def render():
-        lines=len(options) + 1
-        if render.is_first_render:
-            render.is_first_render=False
-        else:
-            print(f"\x1b[{lines}A", end="")
-            
-        Print.yellow("Use UP/DOWN arrows to navigate, 'space' to toggle selection, 'enter' to confirm, and 'c' to cancel")
-        print(question)
-        
-        for idx, opt in enumerate(options):
-            checkbox="[■]" if idx in selected else "[ ]"
-            if idx==selected:
-                print(f"\x1b[K {checkbox} >{opt}<")
-            else:
-                print(f"\x1b[K {checkbox} {opt}")
-        
-        render.is_first_render=True
-        
-        def get_key():
-            fd = sys.stdin.fileno()
-            old_settings = termios.tcgetattr(fd)
-            try:
-                tty.setraw(fd)
-                ch = sys.stdin.read(1)
-                if ch=="\x1b":
-                    ch2=sys.stdin.read(1)
-                    if ch2=="[":
-                        ch3=sys.stdin.read(1)
-                        return f"\x1b[{ch3}"
-                return ch
-            finally:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-                
         print()
-        render()
+
+        if result and result.lower() in ("y", "yes"):
+            return True
         
-        while is_running:
-            key=get_key()
-            
-            if key=="\x1b[A":
-                current=(current-1)%len(options)
-            elif key=="\x1b[B":
-                current=(current+1)%len(options)
-            elif key==" ":
-                if current in selected:
-                    selected.remove(current)
-                else:
-                    selected.add(current)
-                render()
-            elif key=="\n" or key=="\r":
-                result=[options[i] for i in sorted(selected)]
-                is_running=False
-            elif key=="c" or key=="C":
-                result=[]
-                is_running=False
+        return False
     
-    print()
-    return result
+    @staticmethod
+    def text(question: str) -> Optional[str]:
+        model: InputModel=InputModel(question)
+        view: InputView=InputView(model)
+        controller: InputController=InputController(model, view)
+        
+        return controller.run()

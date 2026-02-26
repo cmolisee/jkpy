@@ -1,10 +1,13 @@
 from __future__ import annotations
 from jkpy.handlers.handler import Handler
 import polars as pl
-from jkpy.utils import Print
+from jkpy.utils import Ansi
+from jkpy.mvc.menu import MenuModel
+from jkpy.mvc.menu import MenuView
+import time
 
 class PreprocessingDateHandler(Handler):
-    def process(self, model: 'AppModel', view: 'AppView') -> None:
+    def process(self, model: MenuModel, view: MenuView) -> None:
         title="Preprocessing statuscategorychangedate column >"
         print(title + view.line_break()[len(title):])
         
@@ -13,13 +16,16 @@ class PreprocessingDateHandler(Handler):
         df=df.with_columns(
             pl.col("fields.statuscategorychangedate").cast(pl.Datetime).alias("category_change_date")
         )
+        time.sleep(1.5)
+
         print(">>> Resolving category_change_date column to category_change_month...")
+        time.sleep(1.5)
         print(">>> Resolving category_change_date column to category_change_year...")
         df=df.with_columns(
             pl.col("category_change_date").dt.month().alias("category_change_month"),
             pl.col("category_change_date").dt.year().alias("category_change_year")
         )
         model.data["tempdata"].append(df)
+        time.sleep(1.5)
         
-        Print.green(">>> statuscategorychangedate processed")
-        Print.green(">>> category_change_date, category_change_month, category_change_year\n")
+        print(Ansi.GREEN+"Resolved to: category_change_date, category_change_month, category_change_year  ✅"+Ansi.RESET)

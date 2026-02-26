@@ -1,37 +1,51 @@
 from __future__ import annotations
 from jkpy.handlers.handler import Handler
 from typing import Iterable
+from typing import List
 from datetime import timedelta
 import polars as pl
 from polars._typing import IntoExpr
-from jkpy.utils import Print
+from jkpy.utils import Ansi
+from jkpy.mvc.menu import MenuModel
+from jkpy.mvc.menu import MenuView
+import time
 
 class AggregationHandler(Handler):
-    def process(self, model: 'AppModel', view: 'AppView') -> None:
+    def process(self, model: MenuModel, view: MenuView) -> None:
         title="Aggregating results >"
         print(title + view.line_break()[len(title):])
         
         aggregators=[]
         print(">>> Calculating total issues...")
         aggregators.append(self.total_issues_expression())
-        print(">>> Summing story points...")
-        aggregators.append(self.story_point_sum_expression())
-        print(">>> Counting time spent...")
-        aggregators.append(self.total_time_spent_expression())
-        print(">>> Checking missed time tracking")
-        aggregators.append(self.total_no_work_logged_expression())
-        print(">>> Getting total enhancements")
-        aggregators.append(self.total_enhancements_expression())
-        print(">>> Getting total bugs")
-        aggregators.append(self.total_bugs_expression())
-        print(">>> getting total defects")
-        aggregators.append(self.total_defects_expression())
-        print(">>> getting total spikes")
-        aggregators.append(self.total_spikes_expression())
-        print(">>> Aggregating average story points")
-        aggregators.append(self.story_point_average_expression())
-        print(">>> Calculating missed time tracking deficit")
-        aggregators.append(self.time_tracking_deficit_expression())
+        time.sleep(1.5)
+        # print(">>> Summing story points...")
+        # aggregators.append(self.story_point_sum_expression())
+        # time.sleep(1.5)
+        # print(">>> Counting time spent...")
+        # aggregators.append(self.total_time_spent_expression())
+        # time.sleep(1.5)
+        # print(">>> Checking missed time tracking")
+        # aggregators.append(self.total_no_work_logged_expression())
+        # time.sleep(1.5)
+        # print(">>> Getting total enhancements")
+        # aggregators.append(self.total_enhancements_expression())
+        # time.sleep(1.5)
+        # print(">>> Getting total bugs")
+        # aggregators.append(self.total_bugs_expression())
+        # time.sleep(1.5)
+        # print(">>> getting total defects")
+        # aggregators.append(self.total_defects_expression())
+        # time.sleep(1.5)
+        # print(">>> getting total spikes")
+        # aggregators.append(self.total_spikes_expression())
+        # time.sleep(1.5)
+        # print(">>> Aggregating average story points")
+        # aggregators.append(self.story_point_average_expression())
+        # time.sleep(1.5)
+        # print(">>> Calculating missed time tracking deficit")
+        # aggregators.append(self.time_tracking_deficit_expression())
+        # time.sleep(1.5)
         
         labels_aggregators=self.sums_by_label_expressions(model)
         aggregators=[*aggregators,*labels_aggregators]
@@ -39,67 +53,70 @@ class AggregationHandler(Handler):
         df=model.data["tempdata"][-1].agg(aggregators)
         model.data["tempdata"].append(df)
         
-        Print.green(">>> Data aggregation complete\n")
+        print(Ansi.GREEN+"Data aggregation complete ✅"+Ansi.RESET)
     
     def total_issues_expression(self) -> IntoExpr | Iterable[IntoExpr]:
         return pl.len().alias('total_issues')
 
     def story_point_sum_expression(self) -> IntoExpr | Iterable[IntoExpr]:
         return pl.col("fields.customfield_10028").sum().alias("story_point_sum")
-
-    def format_time_spent(self, ms: int) -> str:
-        total_seconds = ms / 1000.0
-        td = timedelta(seconds=total_seconds)
-        
-        weeks = td.days // 7
-        days = td.days % 7
-        hours, remainder = divmod(td.seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        milliseconds = td.microseconds // 1000
-        
-        parts=[""]
-        if weeks:
-            parts.append(f"{weeks} weeks")
-        if days:
-            parts.append(f"{days} days")
-        if hours:
-            parts.append(f"{hours} hours")
-        if minutes:
-            parts.append(f"{minutes} minutes")
-        if seconds:
-            parts.append(f"{seconds} seconds")
-        if milliseconds:
-            parts.append(f"{milliseconds} milliseconds")
-        
-        return " ".join(parts)
     
-    def total_time_spent_expression(self) -> IntoExpr:
-        return pl.col("fields.timespent").sum().map_batches(self.format_time_spent).alias("total_time_spent")
+    # def total_time_spent_expression(self) -> IntoExpr:
+    #     def process(series: pl.Series) -> pl.Series:
+    #         result: List[str]=list()
+    #         for ts in series.to_list():
+    #             td=timedelta(milliseconds=ts)
+    #             seconds=td.total_seconds()
+    #             days=td.days
+
+    #             weeks=td.days//7
+    #             r_days=days%7
+
+    #             hours=td.seconds//3600
+    #             minutes=(td.seconds%3600)//60
+    #             seconds=td.seconds%60
+    #             r_ms=td.microseconds//1000
+                
+    #             result.append(",".join([str(weeks),str(r_days),str(hours),str(minutes),str(seconds),str(r_ms)]))
+
+    #         return pl.Series(result, dtype=pl.String)
+    
+    #     return pl.col("fields.timespent").map_batches(process, return_dtype=pl.String).alias("w_d_h_m_s_ms")
 
     def total_no_work_logged_expression(self) -> IntoExpr:
-        return (pl.col("fields.timespent")==0 | pl.col("fields.timespent").is_null()).count().alias("no_time_tracking")
+        return ((pl.col("fields.timespent")==0) | pl.col("fields.timespent").is_null()).sum().alias("no_time_tracking")
 
     def total_enhancements_expression(self) -> IntoExpr:
-        return pl.col("team_and_labels").str.contains("(?i)enhancement").alias("total_enhancements")
+        return pl.col("fields.labels").list.contains("(?i)enhancement").sum().alias("total_enhancements")
 
     def total_bugs_expression(self) -> IntoExpr:
-        return pl.col("team_and_labels").str.contains("(?i)bug").alias("total_bugs")
+        return pl.col("fields.labels").list.contains("(?i)bug").sum().alias("total_bugs")
 
     def total_defects_expression(self) -> IntoExpr:
-        return pl.col("team_and_labels").str.contains("(?i)defect").alias("total_defects")
+        return pl.col("fields.labels").list.contains("(?i)defect").sum().alias("total_defects")
 
     def total_spikes_expression(self) -> IntoExpr:
-        return pl.col("team_and_labels").str.contains("(?i)spike").alias("total_spikes")
+        return pl.col("fields.labels").list.contains("(?i)spike").sum().alias("total_spikes")
 
     def story_point_average_expression(self) -> IntoExpr:
         return pl.col("fields.customfield_10028").mean().alias("story_point_average")
-
+    
     def time_tracking_deficit_expression(self) -> IntoExpr:
-        total_issues=pl.len()
-        return (pl.col("fields.timespent")==0 | pl.col("fields.timespent").is_null()).count().map_batches(lambda x: round((x / total_issues) * 100, 3)).alias("time_tracking_deficit")
+        return (
+            ((pl.col("fields.timespent")==0) | pl.col("fields.timespent").is_null())
+            .sum()/pl.len()*100
+        ).alias("time_tracking_deficit")
+        # def process(series: pl.Series) -> pl.Series:
+        #     result: List[float]=list()
+        #     for n in series.to_list():
+        #         result.append(round((n/series.len()) * 100, 3))
+            
+        #     return pl.Series(result, dtype=pl.String)
         
-    def sums_by_label_expressions(self, model: 'AppModel') -> Iterable[IntoExpr]:
-        return [pl.col("team_and_labels").str.contains(f"(?i){label}").alias(f"total_{label}") for label in model.data["labels"]]
+        # return (pl.col("fields.timespent")==0 | pl.col("fields.timespent").is_null()).count().map_batches(process, return_dtype=pl.Float64).alias("time_tracking_deficit")
+        
+    def sums_by_label_expressions(self, model: "MenuModel") -> Iterable[IntoExpr]:
+        return [pl.col("fields.labels").list.contains(f"(?i){label}").sum().alias(f"total_{label}") for label in model.data["labels"]]
     
 # # aggregateprogress:"Σ Progress"
 # # aggregatetimeestimate:"Σ Remaining Estimate"

@@ -3,32 +3,55 @@ from jkpy.handlers.handler import Handler
 import os
 from pathlib import Path
 from datetime import datetime
+from typing import List
 import xlsxwriter
 import polars as pl
-from jkpy.utils import Print
+from jkpy.utils import Ansi
+from jkpy.mvc.menu import MenuModel
+from jkpy.mvc.menu import MenuView
+import time
+import sys
+from jkpy.utils import ProgressBar
+import asyncio
 
 class ExcelOutputHandler(Handler):
-    def process(self, model: 'AppModel', view: 'AppView') -> None:
+    def process(self, model: MenuModel, view: MenuView) -> None:
         title="Formatting and saving data >"
         print(title + view.line_break()[len(title):])
         
-        output_path=os.path.join(
-            Path.home(),
-            model.data["path"],
-            datetime.now().strftime("%Y%m%d_%H%M%S") + ".xlsx"
-        )
+        output_path=Path(os.path.expanduser(model.data["path"]),datetime.now().strftime("%Y%m%d_%H%M%S") + ".xlsx")
+        os.makedirs(output_path.parent, exist_ok=True)
+        print(f">>> Building output directory and file: {output_path}")
+        time.sleep(1.5)
         
-        df_original=model.data["originaldata"]
-        df_output=model.data["tempdata"][-1]
-        print(">>> Getting output path...")
+        data=[model.data["originaldata"], model.data["tempdata"][-1]]
         print(">>> Gathering data...")
-        print(">>> Exporting data...")
-        with xlsxwriter.Workbook(output_path) as workbook:
-            df_original.write_excel(workbook=workbook, worksheet="Raw Dataset")
-            
-            for idx, df in enumerate(df_output):
-                if isinstance(df, pl.DataFrame):
+        time.sleep(1.5)
+
+        errors=asyncio.run(self.export_data(data, output_path, view))
+        print()
+
+        for err in errors:
+            print(err)
+
+        print(Ansi.GREEN+f"Exported successfuly to {output_path} ✅"+Ansi.RESET)
+        print()
+        print()
+
+    async def async_process(self, data, path):
+        errors: List[str]=[]
+        with xlsxwriter.Workbook(path) as workbook:
+            for idx, df in enumerate(data):
+                try:
                     df.write_excel(workbook=workbook, worksheet=f"dataset-{idx}")
-        
-        Print.green(">>> Data exported successfuly")
-        Print.green(">>> see output at: {output_path}\n")
+                except Exception as e:
+                    errors.append(f"{Ansi.YELLOW}>>> {e}{Ansi.RESET}")
+
+        return errors
+    
+    async def export_data(self, data, path, view) -> List[str]:
+        txt=">>> Exporting Data... "
+        sys.stdout.write(txt)
+        return await ProgressBar(min(40, view._width()), len(txt)).run_with(
+            self.async_process(data, path)
+        )

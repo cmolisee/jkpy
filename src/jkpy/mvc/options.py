@@ -1,20 +1,20 @@
 from __future__ import annotations
 from typing import List
 from typing import Any
-from typing import Optional
 import sys
 import tty
 import termios
 from jkpy.utils import Ansi
 
 class OptionsModel:
-    def __init__(self, prompt: str, options: List[str]):
-        self.prompt=prompt
-        self.options=options
-        self.selected=0
-        self.result=None
-        self.is_running=True
-        self._observers=[]
+    def __init__(self, question: str, options: List[str], allow_multi: bool=False) -> None:
+        self.question: str=question
+        self.options: List[str]=options
+        self.selected: int=0
+        self.allow_multi: bool=allow_multi
+        self.result: List[str]=[]
+        self.is_running: bool=True
+        self._observers: List[Any]=[]
         
     def add_observer(self, observer) -> None:
         self._observers.append(observer)
@@ -32,13 +32,20 @@ class OptionsModel:
         self.notify_observers()
         
     def confirm_selection(self) -> None:
-        self.result=self.options[self.selected]
+        if self.allow_multi:
+            opt: str=self.options[self.selected]
+            if opt in self.result:
+                self.result.remove(opt)
+            else:
+                self.result.append(opt)
+        else:
+            self.result=[self.options[self.selected]]
         
-    def stop(self):
+    def stop(self) -> None:
         self.is_running=False
         
 class OptionsView:
-    def __init__(self, model: OptionsModel):
+    def __init__(self, model: OptionsModel) -> None:
         self.model: OptionsModel=model
         self.is_first_render: bool=True
         self.lines_to_overwrite: int=0
@@ -49,30 +56,34 @@ class OptionsView:
             sys.stdout.write(Ansi.erase_line()) 
         sys.stdout.flush()
         
-    def update(self):
+    def update(self) -> None:
         self.render()
         
-    def render(self):
-        self.lines_to_overwrite=len(self.model.options)+len(self.model.header.splitlines())
+    def render(self) -> None:
+        instruction: str="Use UP/DOWN arrows to navigate, 'space' to toggle selection, 'enter' to confirm, and 'q' to quit/cancel"
+        self.lines_to_overwrite=len(self.model.options) \
+            +len(self.model.question.splitlines()) \
+            +len(instruction.splitlines())
         
         if not self.is_first_render:
             self.clear()
             
-        sys.stdout.write(self.model.prompt+"\n")
+        sys.stdout.write(self.model.question+"\n")
         for idx, opt in enumerate(self.model.options):
-            if idx==self.model.selected:
-                sys.stdout.write(f">{Ansi.CYAN}{opt}{Ansi.RESET}<")
-            else:
-                sys.stdout.write(f" {Ansi.CYAN}{opt}{Ansi.RESET}")
+                checkbox="[■]" if idx in self.model.result else "[ ]"
+                if idx==self.model.selected:
+                    print(f"\x1b[K {checkbox} >{opt}<")
+                else:
+                    print(f"\x1b[K {checkbox} {opt}")
         
         sys.stdout.flush()
         self.is_first_render=False
     
-    def reset(self):
+    def reset(self) -> None:
         self.is_first_render=True
         
 class OptionsController:
-    def __init__(self, model: OptionsModel, view: OptionsView):
+    def __init__(self, model: OptionsModel, view: OptionsView) -> None:
         self.model: OptionsModel=model
         self.view: OptionsView=view
 
@@ -86,23 +97,25 @@ class OptionsController:
                 ch2=sys.stdin.read(1)
                 if ch2=="[":
                     ch3=sys.stdin.read(1)
-                    return f"\x1b[{ch3}"
+                    return f"\x1b[{ch3}" if ch3 else "\x1b"
             return ch
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         
-    def handle_input(self, key: str):
-        if key=="\x1b[A":
+    def handle_input(self, key: str) -> None:
+        if key=="\x1b[A": # up
             self.model.select_previous()
-        elif key=="\x1b[B":
+        elif key=="\x1b[B": # down
             self.model.select_next()
-        elif key=="\n" or key=="\r":
+        elif key==" ": # space, toggle
             self.model.confirm_selection()
+        elif key=="\n" or key=="\r": # enter
             self.model.stop()
-        elif key=="q" or key=="Q":
+        elif key=="\x1b": # escape, cancel
+            self.model.result=[]
             self.model.stop()
             
-    def run(self) -> Optional[str]:
+    def run(self) -> List[str]:
         self.view.render()
         while self.model.is_running:
             key=self.get_key()
@@ -112,148 +125,19 @@ class OptionsController:
 
 class Options:
     @staticmethod
-    def select(prompt: str, options: List[str]) -> Optional[str]:
-        model=OptionsModel(prompt, options)
-        view=OptionsView(model)
-        controller=OptionsController(model, view)
+    def select(question: str, options: List[str]) -> List[str]:
+        model: OptionsModel=OptionsModel(question, options)
+        view: OptionsView=OptionsView(model)
+        controller: OptionsController=OptionsController(model, view)
         
         model.add_observer(view)
-        try:
-            return controller.run()
-        except KeyboardInterrupt:
-            model.stop()
-
-
-
-
-
-def confirm(question: str) -> bool:
-    print(f"{question} (y/n)", end="", flush=True)
+        return controller.run()
     
-    def read_yn():
-        fd=sys.stdin.fileno()
-        old_settings=termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            while True:
-                ch=sys.stdin.read(1).lower()
-                if ch in ("y", "n", "\n", "\r"):
-                    return ch
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-    
-    while True:        
-        key=read_yn()
-        if key=="y":
-            selected=True
-        if key=="n":
-            selected=False
-        if key in ("\n", "\r"):
-            return selected
-
-def text_input(question: str, default: str="") -> Optional[str]:
-    print(f"\x1b[1A", end="")
-    Print.yellow("\x1b[K'enter' to confirm, 'escape' to cancel")
-    print(question)
-    # print("\x1b[1A") # cursor up 1 line
-    # print("\x1b[3C") # cursor right 3 characters
-    
-    def read_text():
-        fd=sys.stdin.fileno()
-        old_settings=termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            text=default
-            while True:
-                ch=sys.stdin.read(1)
-                if ch=="\x1b":
-                    ch2=sys.stdin.read(1)
-                    if ch2=="[":
-                        sys.stdin.read(1)
-                        continue
-                    else:
-                        return None
-                elif ch=="\n" or ch=="\r":
-                    return text
-                elif ch=="\x7f":
-                    if text:
-                        text=text[:-1]
-                        print("\b\b", end="", flush=True)
-                elif ch=="\x03":
-                    raise KeyboardInterrupt
-                elif ord(ch) >= 32 and ord(ch) < 127:
-                    if len(text) < 50:
-                        text+=ch
-                        print(ch, end="", flush=True)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-            
-    result=read_text()
-    print()
-    return result if result else None
-    
-def multiselect(question: str, options: List[str]) -> List[str]:
-    selected=set()
-    current=0
-    is_running=True
-    result=None
-    
-    def render():
-        lines=len(options) + 1
-        if render.is_first_render:
-            render.is_first_render=False
-        else:
-            print(f"\x1b[{lines}A", end="")
-            
-        Print.yellow("Use UP/DOWN arrows to navigate, 'space' to toggle selection, 'enter' to confirm, and 'c' to cancel")
-        print(question)
+    @staticmethod
+    def multiselect(question: str, options: List[str]) -> List[str]:
+        model: OptionsModel=OptionsModel(question, options, True)
+        view: OptionsView=OptionsView(model)
+        controller: OptionsController=OptionsController(model, view)
         
-        for idx, opt in enumerate(options):
-            checkbox="[■]" if idx in selected else "[ ]"
-            if idx==selected:
-                print(f"\x1b[K {checkbox} >{opt}<")
-            else:
-                print(f"\x1b[K {checkbox} {opt}")
-        
-        render.is_first_render=True
-        
-        def get_key():
-            fd = sys.stdin.fileno()
-            old_settings = termios.tcgetattr(fd)
-            try:
-                tty.setraw(fd)
-                ch = sys.stdin.read(1)
-                if ch=="\x1b":
-                    ch2=sys.stdin.read(1)
-                    if ch2=="[":
-                        ch3=sys.stdin.read(1)
-                        return f"\x1b[{ch3}"
-                return ch
-            finally:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-                
-        print()
-        render()
-        
-        while is_running:
-            key=get_key()
-            
-            if key=="\x1b[A":
-                current=(current-1)%len(options)
-            elif key=="\x1b[B":
-                current=(current+1)%len(options)
-            elif key==" ":
-                if current in selected:
-                    selected.remove(current)
-                else:
-                    selected.add(current)
-                render()
-            elif key=="\n" or key=="\r":
-                result=[options[i] for i in sorted(selected)]
-                is_running=False
-            elif key=="c" or key=="C":
-                result=[]
-                is_running=False
-    
-    print()
-    return result
+        model.add_observer(view)
+        return controller.run()
