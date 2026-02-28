@@ -9,7 +9,7 @@ from jkpy.mvc.menu import MenuModel
 from jkpy.mvc.menu import MenuView
 import time
 
-class ValidatePrimaryDeveloperHandler(Handler):
+class Validate(Handler):
     def process(self, model: MenuModel, view: MenuView) -> None:
         self.model=model
         self.view=view
@@ -17,26 +17,24 @@ class ValidatePrimaryDeveloperHandler(Handler):
         title="Validating data for primary developer >"
         print(title + view.line_break()[len(title):])
         
-        print(">>> Identifying issues with missing primary developer: customfield_10264.displayName")
-        null_indices=model.data["tempdata"][-1].with_row_index().filter(pl.col("fields.customfield_10264.displayName").is_null())["index"].to_list()
-        time.sleep(1)
-
-        print(">>> Creating alias for primary developer column: primary_developer")
-        data=model.data["tempdata"][-1].to_dict(as_series=False)
-        data["primary_developer"]=data["fields.customfield_10264.displayName"].copy()
-        time.sleep(1)
-        
-        if not null_indices:
-            print(Ansi.GREEN+">>> All issues have a primary developer"+Ansi.RESET)
-            model.data["tempdata"].append(pl.DataFrame(data, strict=False))
-            return
+        print(">>> Searching for missing primary developers...")
+        null_indices=model.data["data_frames"]["normalized"].with_row_index().filter(
+            pl.col("primary_developer").is_null()
+        )["index"].to_list()
+        time.sleep(1.5)
         
         for idx in null_indices:
-            choice=self.prompt_action(model.data["tempdata"][-1].row(idx, named=True))
-            data["primary_developer"][idx]=choice
+            choice=self.prompt_action(model.data["data_frames"]["normalized"].row(idx, named=True))
+            model.data["data_frames"]["normalized"]=model.data["data_frames"]["normalized"] \
+                .with_row_index("index").with_columns( \
+                    pl.when(pl.col("index") == idx)
+                    .then(pl.lit(choice))
+                    .otherwise(pl.col("primary_developer"))
+                    .alias("primary_developer")
+                ).drop("index")
         
-        model.data["tempdata"].append(pl.DataFrame(data, strict=False))
-        print(Ansi.GREEN+"Primary developer column fully validated  ✅"+Ansi.RESET)
+            print(model.data["data_frames"]["normalized"].row(idx))
+        print(Ansi.GREEN+"All issues validated  ✅\n"+Ansi.RESET)
         
     def jira_update(self, key: str, choice: str) -> None:
         account=next((dict(account) for account in self.model.data["accounts"] if "-".join(dict(account)["displayName"]) == choice), None)
@@ -56,7 +54,8 @@ class ValidatePrimaryDeveloperHandler(Handler):
                 "update": {
                     "customfield_10264": [{ "set": { "id": account["accountId"] }}]
                 }
-            }
+            },
+            verify=False
         )
         
         if response.status_code != 204 and response.status_code != 200:
@@ -65,10 +64,10 @@ class ValidatePrimaryDeveloperHandler(Handler):
         print(">>> Updated {key} with {choice}")
     
     def prompt_action(self, row) -> str:
-        header=f"\x1b[K\n{Ansi.MAGENTA}{row["key"]}, {row["fields.summary"]}{Ansi.RESET}\nMissing primary developer, select an option:"
+        header=f"\x1b[K\n{Ansi.MAGENTA}{row["key"]}, {row["summary"]}{Ansi.RESET}\nMissing primary developer, select an option:"
         
         # get disjoint set, default to all members, add None to drop the row
-        options=list(set(row["fields.labels"]) & set(self.model.data["members"]))
+        options=list(set(row["labels"]) & set(self.model.data["members"]))
         options=options if len(options)>0 else self.model.data["members"]
         options.append("Drop This Issue")
         
@@ -85,8 +84,7 @@ class ValidatePrimaryDeveloperHandler(Handler):
             
         # Update Jira
         # 'Drop This Issue' will retain None in the field
-        # 'q' or 'Q' should exit the application
         if choice!="Drop This Issue":
             self.jira_update(row["key"], choice)
         
-        return choice
+        return None if choice=="Drop This Issue" else choice

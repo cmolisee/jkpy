@@ -28,4 +28,4 @@ class PreprocessingDateHandler(Handler):
         model.data["tempdata"].append(df)
         time.sleep(1.5)
         
-        print(Ansi.GREEN+"Resolved to: category_change_date, category_change_month, category_change_year  ✅"+Ansi.RESET)
+        print(Ansi.GREEN+"Resolved to: category_change_date, category_change_month, category_change_year  ✅\n"+Ansi.RESET)

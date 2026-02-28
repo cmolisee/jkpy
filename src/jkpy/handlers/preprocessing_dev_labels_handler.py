@@ -20,4 +20,4 @@ class PreprocessingDevLabelHandler(Handler):
         model.data["tempdata"].append(df)
         time.sleep(1.5)
         
-        print(Ansi.GREEN+"Labels column processed to developer_labels  ✅"+Ansi.RESET)
+        print(Ansi.GREEN+"Labels column processed to developer_labels  ✅\n"+Ansi.RESET)

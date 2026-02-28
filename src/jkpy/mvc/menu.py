@@ -29,9 +29,7 @@ class MenuModel:
             "labels": list(),
             "ignore_labels": list(),
             "host": "",
-            "originaldata": None,
-            "tempdata": list(),
-            "accounts": set(),
+            "data_frames": {},
             "start": date(date.today().year, 1, 1).isoformat(),
             "end": date.today().strftime("%Y-%m-%d"),
         }

@@ -60,21 +60,22 @@ class OptionsView:
         self.render()
         
     def render(self) -> None:
-        instruction: str="Use UP/DOWN arrows to navigate, 'space' to toggle selection, 'enter' to confirm, and 'q' to quit/cancel"
+        instruction: str="UP/DOWN arrows to navigate, 'space' to toggle selection, 'enter' to confirm, and 'q' to quit/cancel"
         self.lines_to_overwrite=len(self.model.options) \
             +len(self.model.question.splitlines()) \
             +len(instruction.splitlines())
         
         if not self.is_first_render:
             self.clear()
-            
+        
+        sys.stdout.write(Ansi.YELLOW+instruction+Ansi.RESET)
         sys.stdout.write(self.model.question+"\n")
         for idx, opt in enumerate(self.model.options):
-                checkbox="[■]" if idx in self.model.result else "[ ]"
+                checkbox="[X]" if idx in self.model.result else "[ ]"
                 if idx==self.model.selected:
-                    print(f"\x1b[K {checkbox} >{opt}<")
+                    print(f"\x1b[K >{checkbox:} {opt:>20}<")
                 else:
-                    print(f"\x1b[K {checkbox} {opt}")
+                    print(f"\x1b[K  {checkbox:} {opt:>20}")
         
         sys.stdout.flush()
         self.is_first_render=False
@@ -107,7 +108,7 @@ class OptionsController:
             self.model.select_previous()
         elif key=="\x1b[B": # down
             self.model.select_next()
-        elif key==" ": # space, toggle
+        elif key=="\x20": # space, toggle
             self.model.confirm_selection()
         elif key=="\n" or key=="\r": # enter
             self.model.stop()

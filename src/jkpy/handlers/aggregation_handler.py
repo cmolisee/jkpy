@@ -53,7 +53,7 @@ class AggregationHandler(Handler):
         df=model.data["tempdata"][-1].agg(aggregators)
         model.data["tempdata"].append(df)
         
-        print(Ansi.GREEN+"Data aggregation complete ✅"+Ansi.RESET)
+        print(Ansi.GREEN+"Data aggregation complete ✅\n"+Ansi.RESET)
     
     def total_issues_expression(self) -> IntoExpr | Iterable[IntoExpr]:
         return pl.len().alias('total_issues')

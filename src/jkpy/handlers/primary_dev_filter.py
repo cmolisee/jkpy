@@ -16,4 +16,4 @@ class PrimaryDevFilter(Handler):
         model.data["tempdata"].append(df)
         time.sleep(1.5)
         
-        print(Ansi.GREEN+"Data has been filtered  ✅"+Ansi.RESET)
+        print(Ansi.GREEN+"Data has been filtered  ✅\n"+Ansi.RESET)

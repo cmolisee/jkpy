@@ -20,4 +20,4 @@ class GroupingHandler(Handler):
         df=model.data["tempdata"][-1].group_by("category_change_month", "developer_labels")
         model.data["tempdata"].append(df)
         
-        print(Ansi.GREEN+"Data grouping complete  ✅"+Ansi.RESET)
+        print(Ansi.GREEN+"Data grouping complete  ✅\n"+Ansi.RESET)

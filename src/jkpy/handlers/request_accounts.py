@@ -9,20 +9,18 @@ import asyncio
 from jkpy.utils import ProgressBar
 import sys
 
-class RequestAccountsHandler(Handler):
+class RequestAccounts(Handler):
     def process(self, model: MenuModel, view: MenuView) -> None:
         title="Collecting Jira account data >"
         print(title + view.line_break()[len(title):])
         
-        cached=["-".join(dict(account)["displayName"]) for account in model.data["accounts"]]
-        accounts_to_get: Set[str]=set(model.data["members"])-set(cached)
-        
-        for userDisplayName in accounts_to_get:
+        model.data["accounts"]=list()
+        for userDisplayName in set(model.data["members"]):
             account=asyncio.run(self.async_request(userDisplayName, model, view))
             if account:
-                model.data["accounts"].add(tuple(account))
+                model.data["accounts"].append(account)
         
-        print(Ansi.GREEN+"Collected all account data  ✅"+Ansi.RESET)
+        print(Ansi.GREEN+"Collected all account data  ✅\n"+Ansi.RESET)
     
     async def async_request(self, displayName: str, model: MenuModel, view: MenuView):
         headers = {
@@ -38,14 +36,15 @@ class RequestAccountsHandler(Handler):
                 read=60.0, # time to wait for response data — increase if Jira is slow
                 write=10.0, # time to send request body
                 pool=10.0, # time to wait for a connection from the pool
-            )) as client:
+            ),
+            verify=False) as client:
                 txt=f">>> [Account Request {displayName}]... "
 
                 sys.stdout.write(txt)
                 response = await ProgressBar(min(40, view._width()), len(txt)).run_with(
                     client.get(
                         url=f"/rest/api/3/user/search?query={displayName}", 
-                        auth=httpx.BasicAuth(model.data["email"], model.data["token"])
+                        auth=httpx.BasicAuth(model.data["email"], model.data["token"]),
                     )
                 )
 

@@ -10,8 +10,9 @@ from jkpy.mvc.menu import MenuView
 import httpx
 import sys
 import asyncio
+import textwrap
 
-class RequestIssuesHandler(Handler):
+class RequestIssues(Handler):
     def process(self, model: MenuModel, view: MenuView) -> None:
         title="Collecting Jira issues >"
         print(title + view.line_break()[len(title):])
@@ -19,12 +20,10 @@ class RequestIssuesHandler(Handler):
         query: str=self.get_jql_query(model)
 
         all_issues=asyncio.run(self.async_request(query, model, view))
-        print(Ansi.GREEN+f"Collected {len(all_issues)} total issues  ✅"+Ansi.RESET)
+        print(Ansi.GREEN+f"Collected {len(all_issues)} total issues  ✅\n"+Ansi.RESET)
 
-        df: pl.DataFrame=pl.json_normalize(all_issues, infer_schema_length=None)
-        
-        model.data["originaldata"]=df
-        model.data["tempdata"].append(df)
+        model.data["df_issues"]=pl.json_normalize(all_issues, infer_schema_length=None)
+        model.data["raw_issues"]=all_issues
     
     def get_jql_query(self, model: "MenuModel") -> str:
         jql_parts: List[str]=[f"("]
@@ -33,8 +32,10 @@ class RequestIssuesHandler(Handler):
         jql_parts.append(f" OR ")
         jql_parts.append(f"('Team Name[Dropdown]' in ({",".join([f"'{team}'" for team in model.data["teams"]])})))")
         # labels to ignore
-        jql_parts.append(f" AND ")
-        jql_parts.append(f" labels not in ({",".join([f"'{label}'" for label in model.data["ignore_labels"]])})")
+        if len(model.data["ignore_labels"])>=1:
+            print(model.data["ignore_labels"])
+            jql_parts.append(f" AND ")
+            jql_parts.append(f" labels not in ({",".join([f"'{label}'" for label in model.data["ignore_labels"]])})")
         # ticket types
         jql_parts.append(f" AND ")
         jql_parts.append(f"type in (Story, Task, Bug, Enhancement)")
@@ -46,6 +47,9 @@ class RequestIssuesHandler(Handler):
         
         jql="".join(jql_parts)
         print(">>> Building JQL...")
+        print()
+        print(Ansi.CYAN+jql+Ansi.RESET)
+        print()
         
         return jql
     
@@ -67,10 +71,11 @@ class RequestIssuesHandler(Handler):
                 read=60.0, # time to wait for response data — increase if Jira is slow
                 write=10.0, # time to send request body
                 pool=10.0, # time to wait for a connection from the pool
-            )) as client:
+            ),
+            verify=False) as client:
             while True:
                 txt=f">>> [Issue Request {page}]... "
-                payload = {
+                payload={
                     "jql": query,
                     "maxResults": 150,
                     "fields": ["key","summary","labels","timespent","resolutiondate","statuscategorychangedate","customfield_10264","customfield_10235","customfield_10028"],
@@ -82,7 +87,7 @@ class RequestIssuesHandler(Handler):
                     client.post(
                         url="/rest/api/3/search/jql", 
                         auth=httpx.BasicAuth(model.data["email"], model.data["token"]),
-                        json=payload
+                        json=payload,
                     )
                 )
 
@@ -95,6 +100,5 @@ class RequestIssuesHandler(Handler):
                 next_page_token = body.get("nextPageToken")
                 page+=1
                 if not next_page_token:
-                    print()
                     break
             return all_issues

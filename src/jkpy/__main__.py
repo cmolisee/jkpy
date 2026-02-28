@@ -11,12 +11,7 @@ from jkpy.callbacks import edit_configurations
 from jkpy.callbacks import exit_application
 from jkpy.utils import Ansi
 from functools import partial
-from urllib3.exceptions import InsecureRequestWarning
 import polars as pl
-import urllib3
-
-# disable warning for InsecureRequestWarning
-urllib3.disable_warnings(InsecureRequestWarning)
 
 pl.Config.set_fmt_str_lengths(1000)             # Character limit for string columns
 pl.Config.set_tbl_cols(-1)                      # -1 shows all columns

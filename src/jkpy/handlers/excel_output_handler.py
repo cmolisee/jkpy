@@ -24,7 +24,8 @@ class ExcelOutputHandler(Handler):
         print(f">>> Building output directory and file: {output_path}")
         time.sleep(1.5)
         
-        data=[model.data["originaldata"], model.data["tempdata"][-1]]
+        # data=[model.data["originaldata"], model.data["tempdata"][-1]]
+        data=[model.data["data_frames"]["normalized"], *model.data["data_frames"]["results"]]
         print(">>> Gathering data...")
         time.sleep(1.5)
 
@@ -34,7 +35,7 @@ class ExcelOutputHandler(Handler):
         for err in errors:
             print(err)
 
-        print(Ansi.GREEN+f"Exported successfuly to {output_path} ✅"+Ansi.RESET)
+        print(Ansi.GREEN+f"Exported successfuly to {output_path} ✅\n"+Ansi.RESET)
         print()
         print()
 
