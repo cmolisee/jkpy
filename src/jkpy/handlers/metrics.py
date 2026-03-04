@@ -43,15 +43,31 @@ class Metrics(Handler):
         time.sleep(1.5)
         
         print(">>> Aggregating metrics for primary developer...")
+        print(
+            model.data["data_frames"]["filtered"].with_columns((pl.col("time_tracking").is_null() | pl.col("time_tracking").eq(0)).alias("is_no_tracking")).columns
+        )
+        
         df_per_primary_dev=model.data["data_frames"]["filtered"] \
             .group_by(["primary_developer", "year_month"]) \
             .agg([
-                self.no_time_tracking()
+                pl.col("time_tracking"),
+                self.total_issues(),
             ]) \
-            .with_columns([
-                (pl.col("no_time_tracking") / pl.col("total_issues") * 100).round(3).alias("time_tracking_deficit"),
-            ]) \
-            .sort(["developer", "year_month"])
+            .rename({"primary_developer": "developer"}) \
+            .sort(["developer", "year_month"]) 
+            
+        print(df_per_primary_dev.select(pl.col("time_tracking").is_null() | pl.col("time_tracking").eq(0)).list.sum().alias("is_no_tracking"))
+        print(df_per_primary_dev.columns)
+        print(df_per_primary_dev.head(10))
+        import sys
+        sys.exit()
+            # .with_columns([
+            #     (pl.col("no_time_tracking") / pl.col("total_issues") * 100).round(3).alias("time_tracking_deficit"),
+            # ]) \
+        
+        # print(model.data["data_frames"]["filtered"].columns)
+        print(df_per_primary_dev.columns)
+        
         time.sleep(1.5)
         
         print(">>> Joining results...")
@@ -103,5 +119,12 @@ class Metrics(Handler):
         return f"{weeks}w {days}d {hours}h {mins}m {secs}s"
     
     def no_time_tracking(self) -> IntoExpr:
-        (pl.col("time_tracking")==0).count().alias("no_time_tracking")
+        # fyi, count() doesn't count boolean values
+        # pl.col("is_no_tracking").list.sum().cast(pl.Int32).fill_null(0).alias("no_time_tracking")
+        pl.col("is_no_tracking").list.sum().fill_null(0).alias("no_time_tracking")
+        # pl.when(pl.col("time_tracking") == 0) \
+        # .then(pl.lit(1)) \
+        # .otherwise(pl.lit(0)) \
+        # .sum() \
+        # .alias("no_time_tracking")
             
