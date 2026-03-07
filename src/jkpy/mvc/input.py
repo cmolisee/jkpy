@@ -1,10 +1,10 @@
 from __future__ import annotations
+import termios
+import tty
 from typing import List
 from typing import Any
 from typing import Optional
 import sys
-from readchar import readkey
-from readchar import key
 from jkpy.utils import Ansi
 
 class InputModel:
@@ -68,24 +68,58 @@ class InputController:
         self.model: InputModel=model
         self.view: InputView=view
 
-    def handle_input(self, k: str) -> None:
-        if k in [key.ENTER, key.TAB]: # enter, submit
+    def get_key(self) -> str|Any:
+        fd=sys.stdin.fileno()
+        old_settings=termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            ch=sys.stdin.read(1)
+            
+            if ch=="\x1b":
+                # switch to timed non-blocking read mode
+                # return immediately if data available or up to 0.1s before empty
+                new_settings=termios.tcgetattr(fd)
+                new_settings[6][termios.VMIN]=0
+                new_settings[6][termios.VTIME]=1
+                termios.tcsetattr(fd, termios.TCSANOW, new_settings)
+                
+                next_ch=sys.stdin.read(1)
+                
+                if next_ch=="[":
+                    ch+=next_ch
+                    
+                    while True:
+                        c=sys.stdin.read(1)
+                        if not c:
+                            break
+                        ch+=c
+                        if c.isalpha() or c=="~":
+                            break
+                elif next_ch=="0":
+                    # SS3 sequence (F1-F4)
+                    ch+=sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+    
+    def handle_input(self, key: str) -> None:
+        if key=="ENTER": # enter, submit
             self.model.stop()
-        elif self.model.result and k==key.BACKSPACE: # backspace - delete should not be allowed
+        elif self.model.result and key=="BACKSPACE": # backspace - delete should not be allowed
             self.model.result=self.model.result[:-1]
             self.view.update()
-        elif k.isalnum() or k in [".","\\","/","?","-","&","%",",","\"","'","_","+","=","$","[","]","(",")",":"]: # char, update
+        elif key.isalnum() or key in [".","\\","/","?","-","&","%",",","\"","'","_","+","=","$","[","]","(",")",":"]: # char, update
             if not self.model.result:
-                self.model.result=k
+                self.model.result=key
             elif len(self.model.result) < 50:
-                self.model.result+=k
+                self.model.result+=key
             self.view.update()
         
     def run(self) -> Optional[str]:
         self.view.render()
         while self.model.is_running:
-            key=readkey()
-            self.handle_input(key)
+            key=self.get_key()
+            self.handle_input(Ansi.KEYS.get(key))
         
         print()
         return self.model.result

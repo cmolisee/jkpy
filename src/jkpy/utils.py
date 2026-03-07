@@ -27,6 +27,25 @@ class Ansi:
     BOLD="\x1b[1m"
     RESET="\x1b[0m"
     
+    KEYS={
+        " ": "SPACE",
+        "\r": "ENTER",
+        "\n": "ENTER",
+        "\x1f": "BACKSPACE",
+        "\x1b": "ESCAPE",
+        "\x1b[A": "UP",
+        "\x1b[B": "DOWN",
+        "\x1b[C": "RIGHT",
+        "\x1b[D": "LEFT",
+        "\x1b[1;2A": "SHIFT+UP",
+        "\x1b[5~": "PAGE_UP",
+        "\x1b[6~": "PAGE_DOWN",
+        "\x1b[H": "HOME",
+        "\x1b[F": "END",
+        "\x1bOP": "F1",
+        "\x1bOQ": "F2",
+    }
+    
     @staticmethod
     def up(y) -> str:
         """Move cursor up 'y' lines, to beginning of line"""

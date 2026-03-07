@@ -18,7 +18,7 @@ class Filter(Handler):
         
         df_filtered=model.data["data_frames"]["normalized"].filter(
             pl.col("primary_developer").is_not_null(),
-            pl.col("green_status")==True
+            pl.col("year_month").is_not_null()
         )
         
         print(">>> Exploding developers into developer rows...")

@@ -37,6 +37,9 @@ class Validate(Handler):
         print(Ansi.GREEN+"All issues validated  ✅\n"+Ansi.RESET)
         
     def jira_update(self, key: str, choice: str) -> None:
+        print(["-".join(dict(account)["displayName"]) for account in self.model.data["accounts"]])
+        print(choice)
+        print(choice in [dict(account)["displayName"].replace(" ", "-") for account in self.model.data["accounts"]])
         account=next((dict(account) for account in self.model.data["accounts"] if "-".join(dict(account)["displayName"]) == choice), None)
         
         if not account:

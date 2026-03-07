@@ -10,7 +10,6 @@ from jkpy.mvc.menu import MenuView
 import httpx
 import sys
 import asyncio
-import textwrap
 
 class RequestIssues(Handler):
     def process(self, model: MenuModel, view: MenuView) -> None:
@@ -33,7 +32,6 @@ class RequestIssues(Handler):
         jql_parts.append(f"('Team Name[Dropdown]' in ({",".join([f"'{team}'" for team in model.data["teams"]])})))")
         # labels to ignore
         if len(model.data["ignore_labels"])>=1:
-            print(model.data["ignore_labels"])
             jql_parts.append(f" AND ")
             jql_parts.append(f" labels not in ({",".join([f"'{label}'" for label in model.data["ignore_labels"]])})")
         # ticket types
@@ -78,7 +76,8 @@ class RequestIssues(Handler):
                 payload={
                     "jql": query,
                     "maxResults": 150,
-                    "fields": ["key","summary","labels","timespent","resolutiondate","statuscategorychangedate","customfield_10264","customfield_10235","customfield_10028"],
+                    "fields": ["key","summary","labels","timespent","customfield_10264","customfield_10235","customfield_10028"],
+                    "expand": "changelog",
                     **({"nextPageToken": next_page_token} if next_page_token else {}),
                 }
 

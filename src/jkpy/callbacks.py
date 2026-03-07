@@ -15,6 +15,9 @@ from jkpy.mvc.menu import MenuView
 from jkpy.mvc.menu import MenuController
 
 def run_application(**kwargs) -> int:
+    choice=Options.select("answer this:", ["option A", "option B"])
+    print(choice)
+    sys.exit(0)
     try:
         model: MenuModel=kwargs["model"]
         view: MenuView=kwargs["view"]

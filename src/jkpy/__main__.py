@@ -20,6 +20,7 @@ pl.Config(tbl_formatting="UTF8_FULL")           # border on all row/column
 # pl.Config.set_tbl_hide_column_names(True)       # hide header row name
 # pl.Config.set_tbl_hide_column_data_types(True)  # hide header row data type
 
+# todo: this isn't being used? wtf.
 def parse_args():
     parser=argparse.ArgumentParser(
         prog="jkpy",

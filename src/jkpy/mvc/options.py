@@ -5,6 +5,7 @@ import sys
 import tty
 import termios
 from jkpy.utils import Ansi
+import select
 
 class OptionsModel:
     def __init__(self, question: str, options: List[str], allow_multi: bool=False) -> None:
@@ -41,6 +42,8 @@ class OptionsModel:
         else:
             self.result=[self.options[self.selected]]
         
+        self.notify_observers()
+        
     def stop(self) -> None:
         self.is_running=False
         
@@ -71,7 +74,7 @@ class OptionsView:
         sys.stdout.write(Ansi.YELLOW+instruction+Ansi.RESET)
         sys.stdout.write(self.model.question+"\n")
         for idx, opt in enumerate(self.model.options):
-                checkbox="[X]" if idx in self.model.result else "[ ]"
+                checkbox="[X]" if self.model.options[idx] in self.model.result else "[ ]"
                 if idx==self.model.selected:
                     print(f"\x1b[K >{checkbox:} {opt:>20}<")
                 else:
@@ -89,30 +92,49 @@ class OptionsController:
         self.view: OptionsView=view
 
     def get_key(self) -> str|Any:
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
+        fd=sys.stdin.fileno()
+        old_settings=termios.tcgetattr(fd)
         try:
             tty.setraw(fd)
-            ch = sys.stdin.read(1)
+            ch=sys.stdin.read(1)
+            
             if ch=="\x1b":
-                ch2=sys.stdin.read(1)
-                if ch2=="[":
-                    ch3=sys.stdin.read(1)
-                    return f"\x1b[{ch3}" if ch3 else "\x1b"
-            return ch
+                # switch to timed non-blocking read mode
+                # return immediately if data available or up to 0.1s before empty
+                new_settings=termios.tcgetattr(fd)
+                new_settings[6][termios.VMIN]=0
+                new_settings[6][termios.VTIME]=1
+                termios.tcsetattr(fd, termios.TCSANOW, new_settings)
+                
+                next_ch=sys.stdin.read(1)
+                
+                if next_ch=="[":
+                    ch+=next_ch
+                    
+                    while True:
+                        c=sys.stdin.read(1)
+                        if not c:
+                            break
+                        ch+=c
+                        if c.isalpha() or c=="~":
+                            break
+                elif next_ch=="0":
+                    # SS3 sequence (F1-F4)
+                    ch+=sys.stdin.read(1)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
         
     def handle_input(self, key: str) -> None:
-        if key=="\x1b[A": # up
+        if key=="UP":
             self.model.select_previous()
-        elif key=="\x1b[B": # down
+        elif key=="DOWN":
             self.model.select_next()
-        elif key=="\x20": # space, toggle
+        elif key=="SPACE":
             self.model.confirm_selection()
-        elif key=="\n" or key=="\r": # enter
+        elif key=="ENTER":
             self.model.stop()
-        elif key=="\x1b": # escape, cancel
+        elif key=="ESCAPE":
             self.model.result=[]
             self.model.stop()
             
@@ -120,7 +142,7 @@ class OptionsController:
         self.view.render()
         while self.model.is_running:
             key=self.get_key()
-            self.handle_input(key)
+            self.handle_input(Ansi.KEYS.get(key))
             
         return self.model.result
 

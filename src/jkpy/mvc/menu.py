@@ -11,37 +11,25 @@ from jkpy.utils import DateTimeEncoder
 from jkpy.utils import Ansi
 import shutil
 import sys
-from readchar import readkey
-from readchar import key
+# from readchar import readkey
+# from readchar import key
 import termios
 
 class MenuModel:
     def __init__(self, options: List[str]) -> None:
         self.config_path: Path=Path(os.path.join(Path.home(), "Documents/.jkpy/config.txt"))
-        # Initialize
-        self.data: Dict[str, Any]={
-            "email": "",
-            "token": "",
-            "path": "",
-            "members": list(),
-            "teams": list(),
-            "statuses": list(),
-            "labels": list(),
-            "ignore_labels": list(),
-            "host": "",
-            "data_frames": {},
-            "start": date(date.today().year, 1, 1).isoformat(),
-            "end": date.today().strftime("%Y-%m-%d"),
-        }
         
-        # update from saved configurations
-        self.data|=self.get_configs()
+        # setup configurations
+        self.data: Dict[str, Any]=self.get_configs()
+        self.data["start"]=date(date.today().year, 1, 1).isoformat()
+        self.data["end"]=date.today().strftime("%Y-%m-%d")
+        self.data["data_frames"]={}
         
         if isinstance(self.data["start"], str):
-            self.data["start"]=datetime.fromisoformat(self.data["start"])
+            self.data["start"]=datetime.fromisoformat(self.data["start"]).replace(tzinfo=None)
             
         if isinstance(self.data["end"], str):
-            self.data["end"]=datetime.fromisoformat(self.data["end"])
+            self.data["end"]=datetime.fromisoformat(self.data["end"]).replace(tzinfo=None)
             
         # mvc variables
         self.options: List[str]=options
@@ -53,7 +41,7 @@ class MenuModel:
         try:
             with open(self.config_path, 'r') as f:
                 data: str=f.read()
-                return self.data|json.loads(data)
+                return json.loads(data)
         except FileNotFoundError:
             print(Ansi.YELLOW+">>> Configuration file does not exist. Returning runtime configs.\n"+Ansi.RESET)
             return self.data
@@ -69,16 +57,17 @@ class MenuModel:
                     if key=="path":
                         Path(value).mkdir(parents=True, exist_ok=True)
                         self.data[key]=value
-                    elif key=="start":
-                        try:
-                            self.data[key]=datetime.strptime(value, '%Y-%m-%d')
-                        except:
-                            self.data[key]=date(date.today().year, 1, 1).isoformat()
-                    elif key=="end":
-                        try:
-                            self.data[key]=datetime.strptime(value, '%Y-%m-%d')
-                        except:
-                            self.data[key]=date.today().strftime("%Y-%m-%d")
+                    # for now, start and end will always be first of the year and the current run date
+                    # elif key=="start":
+                    #     try:
+                    #         self.data[key]=datetime.strptime(value, '%Y-%m-%d')
+                    #     except:
+                    #         self.data[key]=date(date.today().year, 1, 1).isoformat()
+                    # elif key=="end":
+                    #     try:
+                    #         self.data[key]=datetime.strptime(value, '%Y-%m-%d')
+                    #     except:
+                    #         self.data[key]=date.today().strftime("%Y-%m-%d")
                     elif key in ["remove_members","remove_teams","remove_statuses","remove_labels","remove_ignore_labels"]:
                         data_key=key.replace("remove_", "")
                         data_list=self.data[data_key]
@@ -235,23 +224,57 @@ class MenuController:
         if self.model.is_running:
             self.view.reset()
             self.view.render()
+    
+    def get_key(self) -> str|Any:
+        fd=sys.stdin.fileno()
+        old_settings=termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            ch=sys.stdin.read(1)
             
-    def handle_input(self, k: str) -> None:
-        if k==key.UP : # up
+            if ch=="\x1b":
+                # switch to timed non-blocking read mode
+                # return immediately if data available or up to 0.1s before empty
+                new_settings=termios.tcgetattr(fd)
+                new_settings[6][termios.VMIN]=0
+                new_settings[6][termios.VTIME]=1
+                termios.tcsetattr(fd, termios.TCSANOW, new_settings)
+                
+                next_ch=sys.stdin.read(1)
+                
+                if next_ch=="[":
+                    ch+=next_ch
+                    
+                    while True:
+                        c=sys.stdin.read(1)
+                        if not c:
+                            break
+                        ch+=c
+                        if c.isalpha() or c=="~":
+                            break
+                elif next_ch=="0":
+                    # SS3 sequence (F1-F4)
+                    ch+=sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+            
+    def handle_input(self, key: str) -> None:
+        if key==key.UP : # up
             self.model.select_previous()
-        elif k==key.DOWN: # down
+        elif key==key.DOWN: # down
             self.model.select_next()
-        elif k in [key.ENTER, key.TAB]: # enter
+        elif key in [key.ENTER, key.TAB]: # enter
             self.execute_selected()
              
     def run(self) -> None:
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
+        fd=sys.stdin.fileno()
+        old_settings=termios.tcgetattr(fd)
         try:
             self.view.render()
             while self.model.is_running:
-                k=readkey()
-                self.handle_input(k)
+                key=self.get_key()
+                self.handle_input(Ansi.KEYS.get(key))
         except KeyboardInterrupt:
             sys.exit(0)
         finally:

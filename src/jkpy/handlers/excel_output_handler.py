@@ -5,7 +5,6 @@ from pathlib import Path
 from datetime import datetime
 from typing import List
 import xlsxwriter
-import polars as pl
 from jkpy.utils import Ansi
 from jkpy.mvc.menu import MenuModel
 from jkpy.mvc.menu import MenuView
@@ -13,6 +12,7 @@ import time
 import sys
 from jkpy.utils import ProgressBar
 import asyncio
+import polars as pl
 
 class ExcelOutputHandler(Handler):
     def process(self, model: MenuModel, view: MenuView) -> None:
@@ -25,11 +25,11 @@ class ExcelOutputHandler(Handler):
         time.sleep(1.5)
         
         # data=[model.data["originaldata"], model.data["tempdata"][-1]]
-        data=[model.data["data_frames"]["normalized"], *model.data["data_frames"]["results"]]
+        partitioned_data=model.data["data_frames"]["result"].partition_by("year_month")
         print(">>> Gathering data...")
         time.sleep(1.5)
 
-        errors=asyncio.run(self.export_data(data, output_path, view))
+        errors=asyncio.run(self.export_data(model, output_path, view))
         print()
 
         for err in errors:
@@ -37,22 +37,30 @@ class ExcelOutputHandler(Handler):
 
         print(Ansi.GREEN+f"Exported successfuly to {output_path} ✅\n"+Ansi.RESET)
         print()
-        print()
 
-    async def async_process(self, data, path):
+    async def async_process(self, model, path):
         errors: List[str]=[]
         with xlsxwriter.Workbook(path) as workbook:
-            for idx, df in enumerate(data):
+            try:
+                model.data["data_frames"]["normalized"].write_excel(workbook=workbook, worksheet=f"full dataset")
+                model.data["data_frames"]["df_per_dev"].write_excel(workbook=workbook, worksheet=f"df_per_dev")
+                model.data["data_frames"]["df_per_primary_dev"].write_excel(workbook=workbook, worksheet=f"df_per_primary_dev")
+            except Exception as e:
+                errors.append(f"{Ansi.YELLOW}>>> {e}{Ansi.RESET}")
+            
+            for df in model.data["data_frames"]["result"].partition_by("year_month"):
+                year_month=df.select(pl.col("year_month").first()).item()
+                month_name=datetime.strptime(year_month, "%Y-%m").strftime("%B")
                 try:
-                    df.write_excel(workbook=workbook, worksheet=f"dataset-{idx}")
+                    df.write_excel(workbook=workbook, worksheet=month_name)
                 except Exception as e:
                     errors.append(f"{Ansi.YELLOW}>>> {e}{Ansi.RESET}")
 
         return errors
     
-    async def export_data(self, data, path, view) -> List[str]:
+    async def export_data(self, model, path, view) -> List[str]:
         txt=">>> Exporting Data... "
         sys.stdout.write(txt)
         return await ProgressBar(min(40, view._width()), len(txt)).run_with(
-            self.async_process(data, path)
+            self.async_process(model, path)
         )
