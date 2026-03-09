@@ -24,17 +24,31 @@ class Validate(Handler):
         )["index"].to_list()
         time.sleep(1.5)
 
-        updates={}
+        pd_updates={}
         for idx in null_indices:
             choice=self.prompt_action(model.data["data_frames"]["normalized"].row(idx, named=True))
-            updates[idx]=choice
+            pd_updates[idx]=choice
         
-        if len(updates)>0:
+        if len(pd_updates)>0:
             s=model.data["data_frames"]["normalized"]["primary_developer"].clone()
             model.data["data_frames"]["normalized"]=model.data["data_frames"]["normalized"].with_columns(
-                pl.Series("primary_developer", s.scatter(list(updates.keys()), list(updates.values())))
+                pl.Series("primary_developer", s.scatter(list(pd_updates.keys()), list(pd_updates.values())))
             )
+            
+        print(">>> Searching for missing labels...")
+        missing_label=model.data["data_frames"]["normalized"].with_row_index().filter(
+            pl.col("developers").len==0
+        )["key"].to_list()
+        time.sleep(1.5)
         
+        for key in missing_label:
+            print(Ansi.YELLOW+f"Issue {key} is missing a label...")
+        
+        if len(missing_label)>0:
+            print(Ansi.YELLOW+f"\nPlease fix all missing labels listed above and re-run to avoid incorrect data and results.")
+            import sys
+            sys.exit(0)
+            
         print(Ansi.GREEN+"All issues validated  ✅\n"+Ansi.RESET)
         
     def jira_update(self, key: str, choice: str) -> None:
