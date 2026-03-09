@@ -31,7 +31,7 @@ class Ansi:
         " ": "SPACE",
         "\r": "ENTER",
         "\n": "ENTER",
-        "\x1f": "BACKSPACE",
+        "\x7f": "BACKSPACE",
         "\x1b": "ESCAPE",
         "\x1b[A": "UP",
         "\x1b[B": "DOWN",
@@ -45,6 +45,10 @@ class Ansi:
         "\x1bOP": "F1",
         "\x1bOQ": "F2",
     }
+    
+    @staticmethod
+    def fromCode(k):
+        return Ansi.KEYS.get(k) if k in Ansi.KEYS.keys() else k
     
     @staticmethod
     def up(y) -> str:

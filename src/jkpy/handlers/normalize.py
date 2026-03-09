@@ -24,21 +24,15 @@ class Normalize(Handler):
             row["labels"]=fields.get("labels",[]) or []
             row["developers"]=list(set(model.data["members"]) & set(row["labels"]))
             
-            valid_done_date=self.get_valid_done_date(model, issue["changelog"])
-            if valid_done_date:
-                dt=datetime.fromisoformat(valid_done_date.replace("Z", "+00:00"))
-                year_month=dt.strftime("%Y-%m")
+            dt=self.get_valid_done_date(model, issue["changelog"])
+            if dt:
+                year_month=dt.replace(tzinfo=None).strftime("%Y-%m")
             else:
                 year_month=None
                 
             row["year_month"]=year_month
             
             row["primary_developer"]=None if not fields.get("customfield_10264", {}) else fields.get("customfield_10264", {}).get("displayName", None)
-            
-            # resolution_date=fields.get("resolutiondate", datetime.today().isoformat())
-            # change_date=fields.get("statuscategorychangedate", (datetime.today()-timedelta(days=1)).isoformat())
-            # these should ALL be in a green status based on the query
-            # row["green_status"]=datetime.fromisoformat(change_date).date()<=datetime.fromisoformat(resolution_date).date()
             
             row["team"]=None if not fields.get("customfield_10235", {}) else fields.get("customfield_10235", {}).get("value", None)
             row["story_points"]=fields.get("customfield_10028", 0)
@@ -75,7 +69,6 @@ class Normalize(Handler):
         time.sleep(0.3)
         
         model.data["data_frames"]["normalized"]=pl.DataFrame(rows)
-        
         print(Ansi.GREEN+"Data has been filtered ✅\n"+Ansi.RESET)
         
     def get_valid_done_date(self, model: MenuModel, changelog: List[object]) -> None|datetime:
@@ -108,21 +101,22 @@ class Normalize(Handler):
                     
         transitions.sort(key=lambda x: x["date"])
         
-        # walk backwards to find the last consecutive valid transition block
-        last_valid_block=[]
+        # walk backwards to find a list of the last consecutive valid transitions
+        # ignore instances of going in and out of valid statuses
+        valid_dates=[]
         for t in reversed(transitions):
-            if t["to_category"] in model.data["statuses"]:
-                last_valid_block=t["date"]
+            if t["to_category"].lower() in [s.lower().replace("\"","") for s in model.data["statuses"]]:
+                valid_dates.append(t["date"])
             else:
                 break # anything before this is not applicable    
         
-        if not last_valid_block:
+        if not valid_dates:
             return None
         
         # block is reveresed so re-reverse to get it in order
-        for t in list(reversed(last_valid_block)):
+        for d in reversed(valid_dates):
             # all dates should be yyyy-mm-dd
-            if model.data["start"] <= t["date"] <= model.data["end"]:
-                return t["date"]
-                    
+            if model.data["start"] <= d <= model.data["end"]:
+                return d
+                   
         return None

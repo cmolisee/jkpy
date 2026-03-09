@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 from jkpy.handlers.handler import Handler
 from jkpy.mvc.options import Options
 import polars as pl
@@ -22,49 +23,51 @@ class Validate(Handler):
             pl.col("primary_developer").is_null()
         )["index"].to_list()
         time.sleep(1.5)
-        
+
+        updates={}
         for idx in null_indices:
             choice=self.prompt_action(model.data["data_frames"]["normalized"].row(idx, named=True))
-            model.data["data_frames"]["normalized"]=model.data["data_frames"]["normalized"] \
-                .with_row_index("index").with_columns( \
-                    pl.when(pl.col("index") == idx)
-                    .then(pl.lit(choice))
-                    .otherwise(pl.col("primary_developer"))
-                    .alias("primary_developer")
-                ).drop("index")
+            updates[idx]=choice
         
-            print(model.data["data_frames"]["normalized"].row(idx))
+        if len(updates)>0:
+            s=model.data["data_frames"]["normalized"]["primary_developer"].clone()
+            model.data["data_frames"]["normalized"]=model.data["data_frames"]["normalized"].with_columns(
+                pl.Series("primary_developer", s.scatter(list(updates.keys()), list(updates.values())))
+            )
+        
         print(Ansi.GREEN+"All issues validated  ✅\n"+Ansi.RESET)
         
     def jira_update(self, key: str, choice: str) -> None:
-        print(["-".join(dict(account)["displayName"]) for account in self.model.data["accounts"]])
-        print(choice)
-        print(choice in [dict(account)["displayName"].replace(" ", "-") for account in self.model.data["accounts"]])
-        account=next((dict(account) for account in self.model.data["accounts"] if "-".join(dict(account)["displayName"]) == choice), None)
+        account=None
+        for acct in self.model.data["accounts"]:
+            if choice.replace("-", " ")==acct["displayName"]:
+                account=acct
+                break
         
         if not account:
-            print(Ansi.YELLOW+">>> WARNING: Could not find account for {choice}"+Ansi.RESET)
+            print(Ansi.YELLOW+f">>> WARNING: Could not find account for {choice}"+Ansi.RESET)
             return
-            
-        response=httpx.post(
-            f"https://creditonebank.atlassian.net/rest/api/3/issue/{key}",
-            auth=httpx.BasicAuth(self.model.data["email"], self.model.data["token"]),
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "applications/json"
-            },
-            data={
-                "update": {
-                    "customfield_10264": [{ "set": { "id": account["accountId"] }}]
-                }
-            },
-            verify=False
-        )
+        
+        with httpx.Client(verify=False) as client:
+            response=client.put(
+                f"https://creditonebank.atlassian.net/rest/api/3/issue/{key}",
+                auth=httpx.BasicAuth(self.model.data["email"], self.model.data["token"]),
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"},
+                content=json.dumps({
+                    "fields": {
+                        "customfield_10264": {
+                            "accountId": account["accountId"]
+                        }
+                    }
+                })
+            )
         
         if response.status_code != 204 and response.status_code != 200:
-            print(Ansi.YELLOW+">>> Updating primary developer for {key} was NOT successful"+Ansi.RESET)
-        
-        print(">>> Updated {key} with {choice}")
+            print(Ansi.YELLOW+f">>> Updating primary developer for {key} was NOT successful"+Ansi.RESET)
+        else:
+            print(f">>> Updated {key} with {choice}")
     
     def prompt_action(self, row) -> str:
         header=f"\x1b[K\n{Ansi.MAGENTA}{row["key"]}, {row["summary"]}{Ansi.RESET}\nMissing primary developer, select an option:"

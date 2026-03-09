@@ -65,8 +65,7 @@ class OptionsView:
     def render(self) -> None:
         instruction: str="UP/DOWN arrows to navigate, 'space' to toggle selection, 'enter' to confirm, and 'q' to quit/cancel"
         self.lines_to_overwrite=len(self.model.options) \
-            +len(self.model.question.splitlines()) \
-            +len(instruction.splitlines())
+            +len(self.model.question.splitlines())
         
         if not self.is_first_render:
             self.clear()
@@ -142,7 +141,7 @@ class OptionsController:
         self.view.render()
         while self.model.is_running:
             key=self.get_key()
-            self.handle_input(Ansi.KEYS.get(key))
+            self.handle_input(Ansi.fromCode(key))
             
         return self.model.result
 

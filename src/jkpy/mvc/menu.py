@@ -11,9 +11,8 @@ from jkpy.utils import DateTimeEncoder
 from jkpy.utils import Ansi
 import shutil
 import sys
-# from readchar import readkey
-# from readchar import key
 import termios
+import tty
 
 class MenuModel:
     def __init__(self, options: List[str]) -> None:
@@ -260,11 +259,11 @@ class MenuController:
         return ch
             
     def handle_input(self, key: str) -> None:
-        if key==key.UP : # up
+        if key=="UP":
             self.model.select_previous()
-        elif key==key.DOWN: # down
+        elif key=="DOWN":
             self.model.select_next()
-        elif key in [key.ENTER, key.TAB]: # enter
+        elif key=="ENTER":
             self.execute_selected()
              
     def run(self) -> None:
@@ -274,7 +273,7 @@ class MenuController:
             self.view.render()
             while self.model.is_running:
                 key=self.get_key()
-                self.handle_input(Ansi.KEYS.get(key))
+                self.handle_input(Ansi.fromCode(key))
         except KeyboardInterrupt:
             sys.exit(0)
         finally:

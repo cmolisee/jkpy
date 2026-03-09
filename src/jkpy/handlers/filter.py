@@ -17,13 +17,15 @@ class Filter(Handler):
         time.sleep(1.5)
         
         df_filtered=model.data["data_frames"]["normalized"].filter(
-            pl.col("primary_developer").is_not_null(),
-            pl.col("year_month").is_not_null()
+            ~(
+                pl.col("primary_developer").is_null() | (pl.col("primary_developer")=="") |
+                pl.col("year_month").is_null() | (pl.col("year_month")=="")
+            )
         )
-        
+
         print(">>> Exploding developers into developer rows...")
         df_exploded=df_filtered.explode("developers").rename({"developers": "developer"})
-        
+
         model.data["data_frames"]["filtered"]=df_filtered
         model.data["data_frames"]["exploded"]=df_exploded
         

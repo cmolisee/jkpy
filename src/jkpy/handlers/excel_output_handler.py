@@ -25,7 +25,6 @@ class ExcelOutputHandler(Handler):
         time.sleep(1.5)
         
         # data=[model.data["originaldata"], model.data["tempdata"][-1]]
-        partitioned_data=model.data["data_frames"]["result"].partition_by("year_month")
         print(">>> Gathering data...")
         time.sleep(1.5)
 
@@ -42,9 +41,11 @@ class ExcelOutputHandler(Handler):
         errors: List[str]=[]
         with xlsxwriter.Workbook(path) as workbook:
             try:
-                model.data["data_frames"]["normalized"].write_excel(workbook=workbook, worksheet=f"full dataset")
-                model.data["data_frames"]["df_per_dev"].write_excel(workbook=workbook, worksheet=f"df_per_dev")
+                model.data["df_issues"].write_excel(workbook=workbook, worksheet=f"raw")
+                model.data["data_frames"]["normalized"].write_excel(workbook=workbook, worksheet=f"normalized")
+                model.data["data_frames"]["result"].write_excel(workbook=workbook, worksheet=f"result")
                 model.data["data_frames"]["df_per_primary_dev"].write_excel(workbook=workbook, worksheet=f"df_per_primary_dev")
+                model.data["data_frames"]["df_per_dev"].write_excel(workbook=workbook, worksheet=f"df_per_dev")
             except Exception as e:
                 errors.append(f"{Ansi.YELLOW}>>> {e}{Ansi.RESET}")
             

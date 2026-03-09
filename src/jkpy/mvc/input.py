@@ -103,12 +103,12 @@ class InputController:
         return ch
     
     def handle_input(self, key: str) -> None:
-        if key=="ENTER": # enter, submit
+        if key=="ENTER":
             self.model.stop()
-        elif self.model.result and key=="BACKSPACE": # backspace - delete should not be allowed
+        elif self.model.result and key=="BACKSPACE":
             self.model.result=self.model.result[:-1]
             self.view.update()
-        elif key.isalnum() or key in [".","\\","/","?","-","&","%",",","\"","'","_","+","=","$","[","]","(",")",":"]: # char, update
+        elif key.isalnum() or key in [".","\\","/","?","-","&","%",",","\"","'","_","+","=","$","[","]","(",")",":"]:
             if not self.model.result:
                 self.model.result=key
             elif len(self.model.result) < 50:
@@ -119,7 +119,7 @@ class InputController:
         self.view.render()
         while self.model.is_running:
             key=self.get_key()
-            self.handle_input(Ansi.KEYS.get(key))
+            self.handle_input(Ansi.fromCode(key))
         
         print()
         return self.model.result

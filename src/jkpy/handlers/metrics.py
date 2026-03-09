@@ -43,9 +43,6 @@ class Metrics(Handler):
         time.sleep(1.5)
         
         print(">>> Aggregating metrics for primary developer...")
-        # print(
-        #     model.data["data_frames"]["filtered"].with_columns((pl.col("time_tracking").is_null() | pl.col("time_tracking").eq(0)).alias("is_no_tracking")).columns
-        # )
         
         df_per_primary_dev=model.data["data_frames"]["filtered"] \
             .group_by(["primary_developer", "year_month"]) \
@@ -57,18 +54,6 @@ class Metrics(Handler):
             .rename({"primary_developer": "developer"}) \
             .sort(["developer", "year_month"]) 
         model.data["data_frames"]["df_per_primary_dev"]=df_per_primary_dev
-        # print(df_per_primary_dev.head(10))
-        # print(df_per_primary_dev.select(pl.col("time_tracking").is_null() | pl.col("time_tracking").eq(0)).list.sum().alias("is_no_tracking"))
-        # print(df_per_primary_dev.columns)
-        # print(df_per_primary_dev.head(10))
-        # import sys
-        # sys.exit()
-            # .with_columns([
-            #     (pl.col("no_time_tracking") / pl.col("total_issues") * 100).round(3).alias("time_tracking_deficit"),
-            # ]) \
-        
-        # print(model.data["data_frames"]["filtered"].columns)
-        # print(df_per_primary_dev.columns)
         
         time.sleep(1.5)
         
@@ -78,6 +63,8 @@ class Metrics(Handler):
             df_per_primary_dev.select(["developer", "no_tracking_deficit"]),
             on="developer",
             how="left"
+        ).with_columns(
+            pl.col("no_tracking_deficit").fill_null(0.000).cast(pl.Float64)
         )
         
         model.data["data_frames"]["result"]=df_result
