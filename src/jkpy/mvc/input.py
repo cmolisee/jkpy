@@ -34,7 +34,6 @@ class InputView:
         self.lines_to_overwrite: int=0
     
     def clear(self) -> None:
-        # need to do a check if the cursor is on the same line as the text. in which case we don't go up a line but instead to the start of the line...
         if self.lines_to_overwrite==1:
             sys.stdout.write("\r")
             sys.stdout.write(Ansi.erase_line())
