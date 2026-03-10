@@ -7,6 +7,7 @@ from jkpy.mvc.menu import MenuView
 import time
 
 class Filter(Handler):
+    """Removes rows with null or empty primary developer or date."""
     def process(self, model: MenuModel, view: MenuView) -> None:
         title="Filtering data >"
         print(title + view.line_break()[len(title):])

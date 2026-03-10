@@ -1,22 +1,20 @@
 from datetime import date
 from datetime import datetime
 from typing import Any
-from typing import Literal
 import json
-import termios
-import tty
 import sys
-import re
 import time
 import asyncio
 
 class DateTimeEncoder(json.JSONEncoder):
+    """Custom json encoder for handling date and datetime instances."""
     def default(self, o) -> str|Any:
         if isinstance(o, (datetime, date)):
             return o.isoformat()
         return json.JSONEncoder.default(self, o)
     
 class Ansi:
+    """Utility class to assist with ansi codes, colors, and escape sequences."""
     # https://talyian.github.io/ansicolors/
     RED="\x1b[31m"
     GREEN="\x1b[32m"
@@ -47,7 +45,8 @@ class Ansi:
     }
     
     @staticmethod
-    def fromCode(k):
+    def fromCode(k) -> str:
+        """Get the string representation of the hexidecimal escape sequence or the key itself."""
         return Ansi.KEYS.get(k) if k in Ansi.KEYS.keys() else k
     
     @staticmethod
@@ -72,38 +71,26 @@ class Ansi:
     
     @staticmethod
     def to_col(n) -> str:
+        """Move cursor to column n"""
         return f"\x1b[{n}G"
-    
-def get_cursor_position() -> (tuple[int, int] | tuple[Literal[-1], Literal[-1]]):
-    """Reads cursor position (x, y) using ANSI codes."""
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    tty.setcbreak(fd)
-
-    try:
-        sys.stdout.write("\x1b[6n")
-        sys.stdout.flush()
-        buf = ""
-        while not buf.endswith('R'):
-            buf += msvcrt.getch().decode("utf-8") if sys.platform == "win32" else sys.stdin.read(1)
-        matches = re.match(r".*\[(?P<y>\d*);(?P<x>\d*)R", buf)
-        return (int(matches.group("x")), int(matches.group("y"))) if matches else (-1, -1)
-    finally:
-        termios.tcsetattr(fd, termios.TCSAFLUSH, old_settings)
 
 class ProgressBar:
+    """
+    Utitily class to disaplay a progress bar for an asynchronous coroutine.
+    """
     def __init__(self, width, cursor):
-        self.width=width
-        self.cursor=cursor or 1
-        self._progress=0.0
-        self._start=None
+        self.width: int=width
+        self.cursor: int=cursor or 1
+        self._progress: float=0.0
+        self._start: float=None
 
-    async def _animate(self):
+    async def _animate(self) -> None:
+        """Animation loop that calculates state using asymptotic deceleration."""
         self._start=time.monotonic()
         while True:
             elapsed=time.monotonic()-self._start
 
-            # asymptotic deceleration
+            # asymptotic deceleration parts
             cap=1
             speed=1
             inner=1/(1+elapsed/speed) # from 1, decay to 0 
@@ -114,14 +101,15 @@ class ProgressBar:
             self._render(self._progress)
             await asyncio.sleep(0.05)
 
-    def _render(self, progress):
+    def _render(self, progress) -> None:
+        """Render the current state."""
         filled=int(self.width * progress)
         bar="#"*filled+" "*(self.width-filled)
         sys.stdout.write(Ansi.to_col(self.cursor))
         sys.stdout.write(f"[{bar}] {progress * 100:5.1f}%")
         sys.stdout.flush()
 
-    async def run_with(self, coro):
+    async def run_with(self, coro) -> None:
         """Run a coroutine while animating, then snap to 100%."""
         task=asyncio.create_task(self._animate())
         try:
@@ -131,13 +119,3 @@ class ProgressBar:
             self._render(1.0)
             sys.stdout.write("\n")
             sys.stdout.flush()
-
-
-# def progress_bar(iteration, total, length, fill="#", empty=" ", cursor_start=0) -> None:
-#     percent: str=("{0:0.1f}").format(100*(iteration/float(total)))
-#     filled_length: int=int(length*iteration//total)
-#     bar: str=fill*filled_length+empty*(length-filled_length)
-    
-#     sys.stdout.write(Ansi.to_col(cursor_start))
-#     sys.stdout.write(f"{bar} {percent}%")
-#     sys.stdout.flush()

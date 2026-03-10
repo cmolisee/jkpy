@@ -14,7 +14,8 @@ from jkpy.mvc.menu import MenuModel
 from jkpy.mvc.menu import MenuView
 from jkpy.mvc.menu import MenuController
 
-def run_application(**kwargs) -> int:
+def run_application(**kwargs) -> None:
+    """Callback to run the primary handler chain of this program."""
     try:
         model: MenuModel=kwargs["model"]
         view: MenuView=kwargs["view"]
@@ -23,13 +24,14 @@ def run_application(**kwargs) -> int:
         print()
         
         handler_chain.handle(model, view)
-        return 0
+        sys.exit(0)
     except Exception:
         import traceback
         print(Ansi.RED+traceback.format_exc()+Ansi.RESET)
-        return 1
+        sys.exit(1)
 
-def show_configurations(**kwargs) -> int:
+def show_configurations(**kwargs) -> None:
+    """Callback to print the application configurations to the terminal"""
     try:
         model: MenuModel=kwargs["model"]
 
@@ -50,21 +52,20 @@ def show_configurations(**kwargs) -> int:
             else:
                 config[k]=str(v)       
         
-        print(Ansi.GREEN)
         df=pl.json_normalize(config, strict=False)
-        print(df.transpose(include_header=True, header_name="key", column_names=["value"]))
-        print(Ansi.RESET)
+        print(Ansi.GREEN+df.transpose(include_header=True, header_name="key", column_names=["value"])+Ansi.RESET)
 
         if not Input.confirm("Do you wish to continue?"):
             model.stop()
         
-        return 0
+        return
     except Exception:
         import traceback
         print(Ansi.RED+traceback.format_exc()+Ansi.RESET)
         sys.exit(1)
 
 def setter_prompt(**kwargs) -> int:
+    """Callback to prompt the user for setting a specific configuration"""
     try:
         model: MenuModel=kwargs["model"]
         key: str=kwargs["key"]
@@ -81,23 +82,25 @@ def setter_prompt(**kwargs) -> int:
         if response is not None:
             model.set_configs({ key: response})
         
-        return 0
+        return
     except Exception:
         import traceback
         print(Ansi.RED+traceback.format_exc()+Ansi.RESET)
         sys.exit(1)
 
 def back(**kwargs) -> int:
+    """Callback to return from the current submenu"""
     try:
         model: MenuModel = kwargs["model"]
         model.is_running=False
-        return 0
+        return
     except Exception:
         import traceback
         print(Ansi.RED+traceback.format_exc()+Ansi.RESET)
         sys.exit(1)
         
 def edit_configurations(**kwargs) -> int:
+    """Callback to navigate to the configuration submenu."""
     try:
         options: List[str]=[
             "Set Host",
@@ -151,13 +154,14 @@ def edit_configurations(**kwargs) -> int:
         import traceback
         print(Ansi.RED+traceback.format_exc()+Ansi.RESET)
         sys.exit(1)
-    return 0
+    return
 
 def exit_application(**kwargs) -> int:
+    """Callback to stop application execution and exit the application"""
     try:
         model: MenuModel=kwargs["model"]
         model.stop()
-        return 0
+        return
     except Exception:
         import traceback
         print(Ansi.RED+traceback.format_exc()+Ansi.RESET)

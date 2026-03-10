@@ -15,6 +15,7 @@ import termios
 import tty
 
 class MenuModel:
+    """MVC Model for Menu interactions"""
     def __init__(self, options: List[str]) -> None:
         self.config_path: Path=Path(os.path.join(Path.home(), "Documents/.jkpy/config.txt"))
         
@@ -37,6 +38,7 @@ class MenuModel:
         self._observers: List[Any]=[]
     
     def get_configs(self) -> Dict[str, Any]:
+        """Get configs from local cache"""
         try:
             with open(self.config_path, 'r') as f:
                 data: str=f.read()
@@ -46,6 +48,7 @@ class MenuModel:
             return self.data
     
     def set_configs(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """Set configs in local cache"""
         keys=["email","token","path","members","teams","statuses","labels","ignore_labels","host","start","end"]
         # make directory if DNE
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -56,17 +59,6 @@ class MenuModel:
                     if key=="path":
                         Path(value).mkdir(parents=True, exist_ok=True)
                         self.data[key]=value
-                    # for now, start and end will always be first of the year and the current run date
-                    # elif key=="start":
-                    #     try:
-                    #         self.data[key]=datetime.strptime(value, '%Y-%m-%d')
-                    #     except:
-                    #         self.data[key]=date(date.today().year, 1, 1).isoformat()
-                    # elif key=="end":
-                    #     try:
-                    #         self.data[key]=datetime.strptime(value, '%Y-%m-%d')
-                    #     except:
-                    #         self.data[key]=date.today().strftime("%Y-%m-%d")
                     elif key in ["remove_members","remove_teams","remove_statuses","remove_labels","remove_ignore_labels"]:
                         data_key=key.replace("remove_", "")
                         data_list=self.data[data_key]
@@ -86,24 +78,30 @@ class MenuModel:
         return self.data
    
     def add_observer(self, observer: Any) -> None:
+        """Add observer to notify for updates. Observers must have update() function."""
         self._observers.append(observer)
         
     def notify_observers(self) -> None:
+        """Notify all observers of an update"""
         for observer in self._observers:
             observer.update()
         
     def select_previous(self) -> None:
+        """Update selected option to previous selection. notify observers."""
         self.selected=(self.selected-1)%len(self.options)
         self.notify_observers()
         
     def select_next(self) -> None:
+        """Update selected option to next selection. notify observers."""
         self.selected=(self.selected+1)%len(self.options)
         self.notify_observers()
         
     def stop(self) -> None:
+        """stop the execution of this MVC"""
         self.is_running=False
         
 class MenuView:
+    """MVC View for menu interactions"""
     PLUS=r"""+"""
     BAR=r"""|"""
     DASH=r"""-"""
@@ -134,15 +132,18 @@ class MenuView:
         self.lines_to_overwrite: int=0
 
     def _width(self) -> int:
+        """Gets width in columns of the terminal view"""
         try:
             return round(shutil.get_terminal_size().columns*(2/3))
         except OSError: # Fallback
             return 64
 
     def line_break(self) -> str:
+        """Renders a formatted line break"""
         return self.DASH*self._width()
     
     def banner(self) -> str:
+        """Renders banner"""
         width: int=self._width()
         horizontal_border: str=self.PLUS+self.DASH*(width-2)+self.PLUS
         empty_line: str=self.BAR+(" "*(width-2)+self.BAR)
@@ -169,18 +170,22 @@ class MenuView:
         return "\n".join(banner_parts)
 
     def instructions(self) -> str:
+        """Renders instructions"""
         return "Use UP/DOWN arrows to navigate, 'enter' to select, 'CTRL+C' to quit"
     
     def clear(self) -> None:
+        """Clear all lines set by lines_to_overwrite"""
         for _ in range(self.lines_to_overwrite):
             sys.stdout.write(Ansi.up(1)) 
             sys.stdout.write(Ansi.erase_line()) 
         sys.stdout.flush()
     
     def update(self) -> None:
+        """Update the view."""
         self.render()
     
     def render(self) -> None:
+        """Print the view to the terminal."""
         instructions: str=f"{Ansi.YELLOW}{self.instructions()}{Ansi.RESET}"
         self.lines_to_overwrite=len(self.model.options) \
             +len(instructions.splitlines())
@@ -199,18 +204,22 @@ class MenuView:
         self.is_first_render=False
         
     def reset(self) -> None:
+        """Resets first render which triggers the view to be cleared."""
         self.is_first_render=True
         
 class MenuController:
+    """MVC Controller for options interactions"""
     def __init__(self, model: MenuModel, view: MenuView) -> None:
         self.model: MenuModel=model
         self.view: MenuView=view
         self.callbacks: dict[int, Any]={}
         
     def register_callback(self, index: int, callback: Any) -> None:
+        """Registers a callback function for a specific menu option"""
         self.callbacks[index]=callback
     
     def execute_selected(self) -> None:
+        """Invokes selected menu option callback"""
         # get the selected callback
         callback=self.callbacks.get(self.model.selected)
         
@@ -225,6 +234,7 @@ class MenuController:
             self.view.render()
     
     def get_key(self) -> str|Any:
+        """Retrieve keyboard input from terminal"""
         fd=sys.stdin.fileno()
         old_settings=termios.tcgetattr(fd)
         try:
@@ -259,6 +269,7 @@ class MenuController:
         return ch
             
     def handle_input(self, key: str) -> None:
+        """Determine how to handle keyboard input received from terminal."""
         if key=="UP":
             self.model.select_previous()
         elif key=="DOWN":
@@ -267,6 +278,7 @@ class MenuController:
             self.execute_selected()
              
     def run(self) -> None:
+        """Initiate the options mvc"""
         fd=sys.stdin.fileno()
         old_settings=termios.tcgetattr(fd)
         try:

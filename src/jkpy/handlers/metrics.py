@@ -9,6 +9,7 @@ from polars._typing import IntoExpr
 from typing import Iterable
 
 class Metrics(Handler):
+    """Builds metrics for dataset"""
     def process(self, model: MenuModel, view: MenuView) -> None:
         title="Building Metrics >"
         print(title + view.line_break()[len(title):])

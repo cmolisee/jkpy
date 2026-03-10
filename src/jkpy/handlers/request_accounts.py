@@ -10,6 +10,7 @@ from jkpy.utils import ProgressBar
 import sys
 
 class RequestAccounts(Handler):
+    """Fetch user accounts used for validating the data"""
     def process(self, model: MenuModel, view: MenuView) -> None:
         title="Collecting Jira account data >"
         print(title + view.line_break()[len(title):])

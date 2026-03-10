@@ -15,6 +15,7 @@ import asyncio
 import polars as pl
 
 class ExcelOutputHandler(Handler):
+    """Exports results to .xslx"""
     def process(self, model: MenuModel, view: MenuView) -> None:
         title="Formatting and saving data >"
         print(title + view.line_break()[len(title):])
@@ -24,7 +25,6 @@ class ExcelOutputHandler(Handler):
         print(f">>> Building output directory and file: {output_path}")
         time.sleep(1.5)
         
-        # data=[model.data["originaldata"], model.data["tempdata"][-1]]
         print(">>> Gathering data...")
         time.sleep(1.5)
 
@@ -38,18 +38,15 @@ class ExcelOutputHandler(Handler):
         print()
 
     async def async_process(self, model, path):
+        """Writes data to workbook"""
         errors: List[str]=[]
         with xlsxwriter.Workbook(path) as workbook:
             try:
-                model.data["df_issues"].write_excel(workbook=workbook, worksheet=f"raw")
-                model.data["data_frames"]["normalized"].write_excel(workbook=workbook, worksheet=f"normalized")
-                model.data["data_frames"]["result"].write_excel(workbook=workbook, worksheet=f"result")
-                model.data["data_frames"]["df_per_primary_dev"].write_excel(workbook=workbook, worksheet=f"df_per_primary_dev")
-                model.data["data_frames"]["df_per_dev"].write_excel(workbook=workbook, worksheet=f"df_per_dev")
+                model.data["df_issues"].write_excel(workbook=workbook, worksheet=f"raw data")
             except Exception as e:
                 errors.append(f"{Ansi.YELLOW}>>> {e}{Ansi.RESET}")
             
-            for df in model.data["data_frames"]["result"].partition_by("year_month"):
+            for df in model.data["data_frames"]["result"].sort(["year_month", "developer"]).partition_by("year_month"):
                 year_month=df.select(pl.col("year_month").first()).item()
                 month_name=datetime.strptime(year_month, "%Y-%m").strftime("%B")
                 try:

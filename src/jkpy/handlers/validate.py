@@ -11,6 +11,7 @@ from jkpy.mvc.menu import MenuView
 import time
 
 class Validate(Handler):
+    """validates data, updates primary devs, and/or notifies of missing fields."""
     def process(self, model: MenuModel, view: MenuView) -> None:
         self.model=model
         self.view=view
@@ -23,7 +24,7 @@ class Validate(Handler):
             pl.col("primary_developer").is_null()
         )["index"].to_list()
         time.sleep(1.5)
-
+        
         pd_updates={}
         for idx in null_indices:
             choice=self.prompt_action(model.data["data_frames"]["normalized"].row(idx, named=True))

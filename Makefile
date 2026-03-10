@@ -16,17 +16,17 @@ BLUE := \033[34m
 MAGENTA := \033[35m
 CYAN := \033[36m
 
-email=""
-token=""
-path=""
-members=""
-teams=""
-statuses=""
-labels=""
-ignore-labels=""
-start=""
-end=""
-host=""
+# email=""
+# token=""
+# path=""
+# members=""
+# teams=""
+# statuses=""
+# labels=""
+# ignore-labels=""
+# start=""
+# end=""
+# host=""
 
 .PHONY: help venv install
 
@@ -104,58 +104,58 @@ type-check: ## Run type checking
 	$(VENV_PYTHON) -m mypy .
 	@printf "$(GREEN)>>> Type checking complete$(NC)\n"
 
-##@ >>> Setup and Configurations Targets
-config: ## Show Configurations
-	@$(VENV_APP) --config | $(VENV_PYTHON) -m json.tool
-email: ## Set Jira email config
-### make email --email=john.doe@gmail.com
-	$(VENV_APP) --email $(email)
-token: ## Set Jira token config
-### make token --token=AAB1213DWELK...
-	$(VENV_APP) --token $(token)
-path: ## Set output path
-### make path --path=~/Documents/jkpy
-	$(VENV_APP) --path $(path)
-members: ## Set members by member name (e.g. John Doe)
-### make members --members="John Doe","Dohn Joe",etc...
-	$(VENV_APP) --members $(members)
-teams: ## Set teams by team name (e.g. ABC-TEAM-ONE)
-### make teams --teams=ABC-team-one,ABC-team-two
-	$(VENV_APP) --teams $(teams)
-statuses: ## Set statuses by status type (e.g. "in development")
-### make statuses --statuses="in development","in qa",done,...
-	$(VENV_APP) --statuses $(statuses)
-labels: ## Set labels for targeted metrics (e.g. "a/b test")
-### make labels --labels="a/b test","rollover",etc...
-	$(VENV_APP) --labels $(labels)
-start: ## Set start date for target dataset
-### make start --start=2026-01-01
-	$(VENV_APP) --start $(start)
-end: ## Set end date for target dataset
-### make end --end=2026-02-01
-	$(VENV_APP) --end $(end)
-range: ## Set date range for target dataset
-### make range --start=2026-01-01 --end=2026-02-01
-	$(VENV_APP) --start $(start) --end $(end)
-host: ## Set the Jira API host
-	$(VENV_APP) --host $(host)
-ignore-labels: ## Set ignore labels
-	$(VENV_APP) --ignore-labels $(host)
-remove-members: ## Remove member(s)
-### make remove-members --members="john doe"
-	$(VENV_APP) --remove-members $(members)
-remove-teams: ## Remove team(s)
-### make remove-teams --members=ABC-team-one
-	$(VENV_APP) --remove-teams $(teams)
-remove-statuses: ## Remove status(es)
-### make remove-statuses --statuses=done
-	$(VENV_APP) --remove-statuses $(statuses)
-remove-labels: ## Remove label(s)
-### make remove-labels --labels="rollover"
-	$(VENV_APP) --remove-labels $(labels)
-remove-ignore-labels: ## Remove label(s)
-### make remove-ignore-labels --ignore-labels="test"
-	$(VENV_APP) --remove-ignore-labels $(labels)
+# ##@ >>> Setup and Configurations Targets
+# config: ## Show Configurations
+# 	@$(VENV_APP) --config | $(VENV_PYTHON) -m json.tool
+# email: ## Set Jira email config
+# ### make email --email=john.doe@gmail.com
+# 	$(VENV_APP) --email $(email)
+# token: ## Set Jira token config
+# ### make token --token=AAB1213DWELK...
+# 	$(VENV_APP) --token $(token)
+# path: ## Set output path
+# ### make path --path=~/Documents/jkpy
+# 	$(VENV_APP) --path $(path)
+# members: ## Set members by member name (e.g. John Doe)
+# ### make members --members="John Doe","Dohn Joe",etc...
+# 	$(VENV_APP) --members $(members)
+# teams: ## Set teams by team name (e.g. ABC-TEAM-ONE)
+# ### make teams --teams=ABC-team-one,ABC-team-two
+# 	$(VENV_APP) --teams $(teams)
+# statuses: ## Set statuses by status type (e.g. "in development")
+# ### make statuses --statuses="in development","in qa",done,...
+# 	$(VENV_APP) --statuses $(statuses)
+# labels: ## Set labels for targeted metrics (e.g. "a/b test")
+# ### make labels --labels="a/b test","rollover",etc...
+# 	$(VENV_APP) --labels $(labels)
+# start: ## Set start date for target dataset
+# ### make start --start=2026-01-01
+# 	$(VENV_APP) --start $(start)
+# end: ## Set end date for target dataset
+# ### make end --end=2026-02-01
+# 	$(VENV_APP) --end $(end)
+# range: ## Set date range for target dataset
+# ### make range --start=2026-01-01 --end=2026-02-01
+# 	$(VENV_APP) --start $(start) --end $(end)
+# host: ## Set the Jira API host
+# 	$(VENV_APP) --host $(host)
+# ignore-labels: ## Set ignore labels
+# 	$(VENV_APP) --ignore-labels $(host)
+# remove-members: ## Remove member(s)
+# ### make remove-members --members="john doe"
+# 	$(VENV_APP) --remove-members $(members)
+# remove-teams: ## Remove team(s)
+# ### make remove-teams --members=ABC-team-one
+# 	$(VENV_APP) --remove-teams $(teams)
+# remove-statuses: ## Remove status(es)
+# ### make remove-statuses --statuses=done
+# 	$(VENV_APP) --remove-statuses $(statuses)
+# remove-labels: ## Remove label(s)
+# ### make remove-labels --labels="rollover"
+# 	$(VENV_APP) --remove-labels $(labels)
+# remove-ignore-labels: ## Remove label(s)
+# ### make remove-ignore-labels --ignore-labels="test"
+# 	$(VENV_APP) --remove-ignore-labels $(labels)
 
 ##@ >>> Run Targets
 run: ## Run application

@@ -5,9 +5,9 @@ import sys
 import tty
 import termios
 from jkpy.utils import Ansi
-import select
 
 class OptionsModel:
+    """MVC Model for Options interactions"""
     def __init__(self, question: str, options: List[str], allow_multi: bool=False) -> None:
         self.question: str=question
         self.options: List[str]=options
@@ -18,21 +18,26 @@ class OptionsModel:
         self._observers: List[Any]=[]
         
     def add_observer(self, observer) -> None:
+        """Add observer to notify for updates. Observers must have update() function."""
         self._observers.append(observer)
         
     def notify_observers(self) -> None:
+        """Notify all observers of an update"""
         for observer in self._observers:
             observer.update()
         
     def select_previous(self) -> None:
+        """Update selected option to previous selection. notify observers."""
         self.selected=(self.selected-1)%len(self.options)
         self.notify_observers()
         
     def select_next(self) -> None:
+        """Update selected option to next selection. notify observers."""
         self.selected=(self.selected+1)%len(self.options)
         self.notify_observers()
         
     def confirm_selection(self) -> None:
+        """Confirm the current selection as the option to return when complete. notify observers."""
         if self.allow_multi:
             opt: str=self.options[self.selected]
             if opt in self.result:
@@ -45,24 +50,29 @@ class OptionsModel:
         self.notify_observers()
         
     def stop(self) -> None:
+        """stop the execution of this MVC"""
         self.is_running=False
         
 class OptionsView:
+    """MVC View for options interactions"""
     def __init__(self, model: OptionsModel) -> None:
         self.model: OptionsModel=model
         self.is_first_render: bool=True
         self.lines_to_overwrite: int=0
     
     def clear(self) -> None:
+        """Clear all lines set by lines_to_overwrite"""
         for _ in range(self.lines_to_overwrite):
             sys.stdout.write(Ansi.up(1)) 
             sys.stdout.write(Ansi.erase_line()) 
         sys.stdout.flush()
         
     def update(self) -> None:
+        """Update the view."""
         self.render()
         
     def render(self) -> None:
+        """Print the view to the terminal."""
         instruction: str="UP/DOWN arrows to navigate, 'space' to toggle selection, 'enter' to confirm, and 'q' to quit/cancel"
         self.lines_to_overwrite=len(self.model.options) \
             +len(self.model.question.splitlines())
@@ -83,14 +93,17 @@ class OptionsView:
         self.is_first_render=False
     
     def reset(self) -> None:
+        """Resets first render which triggers the view to be cleared."""
         self.is_first_render=True
         
 class OptionsController:
+    """MVC Controller for options interactions"""
     def __init__(self, model: OptionsModel, view: OptionsView) -> None:
         self.model: OptionsModel=model
         self.view: OptionsView=view
 
     def get_key(self) -> str|Any:
+        """Retrieve keyboard input from terminal"""
         fd=sys.stdin.fileno()
         old_settings=termios.tcgetattr(fd)
         try:
@@ -125,6 +138,7 @@ class OptionsController:
         return ch
         
     def handle_input(self, key: str) -> None:
+        """Determine how to handle keyboard input received from terminal."""
         if key=="UP":
             self.model.select_previous()
         elif key=="DOWN":
@@ -138,6 +152,7 @@ class OptionsController:
             self.model.stop()
             
     def run(self) -> List[str]:
+        """Initiate the options mvc"""
         self.view.render()
         while self.model.is_running:
             key=self.get_key()
@@ -146,8 +161,10 @@ class OptionsController:
         return self.model.result
 
 class Options:
+    """Helper class with static methods for easily creating instances of the options MVC's"""
     @staticmethod
     def select(question: str, options: List[str]) -> List[str]:
+        """Create Option MVC for a single option select"""
         model: OptionsModel=OptionsModel(question, options)
         view: OptionsView=OptionsView(model)
         controller: OptionsController=OptionsController(model, view)
@@ -157,6 +174,7 @@ class Options:
     
     @staticmethod
     def multiselect(question: str, options: List[str]) -> List[str]:
+        """Create Option MVC for a multi option select"""
         model: OptionsModel=OptionsModel(question, options, True)
         view: OptionsView=OptionsView(model)
         controller: OptionsController=OptionsController(model, view)

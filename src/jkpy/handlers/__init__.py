@@ -1,3 +1,5 @@
+from __future__ import annotations
+from jkpy.handlers.handler import Handler
 from jkpy.handlers.request_issues import RequestIssues
 from jkpy.handlers.request_accounts import RequestAccounts
 from jkpy.handlers.normalize import Normalize
@@ -7,8 +9,10 @@ from jkpy.handlers.metrics import Metrics
 from jkpy.handlers.excel_output_handler import ExcelOutputHandler
 
 class Handlers:
+    """Class for managing chain of responsibility"""
     @classmethod
-    def create_chain(cls):
+    def create_chain(cls) -> Handler:
+        """Create chain from handlers"""
         handlers={
             0: RequestIssues(),
             1: RequestAccounts(),
@@ -26,16 +30,6 @@ class Handlers:
             .set_next(handlers[4]) \
             .set_next(handlers[5]) \
             .set_next(handlers[6])
-        
-        # request_issues_handler.set_next(request_accounts_handler) \
-        #     .set_next(raw_data_filter) \
-        #     .set_next(preprocessing_date_handler) \
-        #     .set_next(preprocessing_dev_labels_handler) \
-        #     .set_next(validate_primary_dev_handler) \
-        #     .set_next(primary_dev_filter) \
-        #     .set_next(grouping_handler) \
-        #     .set_next(aggregation_handler) \
-        #     .set_next(excel_output_handler)
 
         return chain
     

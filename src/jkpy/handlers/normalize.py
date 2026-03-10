@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import List
 
 class Normalize(Handler):
+    """Normalizes and cleans the raw data to make it easier to work with"""
     def process(self, model: MenuModel, view: MenuView) -> None:
         title="Normalizing Data >"
         print(title + view.line_break()[len(title):])

@@ -12,6 +12,7 @@ import sys
 import asyncio
 
 class RequestIssues(Handler):
+    """Fetch all the raw data (issues)"""
     def process(self, model: MenuModel, view: MenuView) -> None:
         title="Collecting Jira issues >"
         print(title + view.line_break()[len(title):])
