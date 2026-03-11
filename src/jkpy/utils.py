@@ -12,7 +12,7 @@ class DateTimeEncoder(json.JSONEncoder):
     def default(self, o: object) -> str | Any:
         if isinstance(o, (datetime, date)):
             return o.isoformat()
-        return json.JSONEncoder.default(self, o)
+        return super().default(o)
 
 
 class Ansi:
