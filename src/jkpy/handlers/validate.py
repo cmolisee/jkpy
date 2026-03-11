@@ -55,7 +55,7 @@ class Validate(Handler):
         missing_label = (
             model.data["data_frames"]["normalized"]
             .with_row_index()
-            .filter(pl.col("developers").len == 0)["key"]
+            .filter(pl.col("developers").len() == 0)["key"]
             .to_list()
         )
         time.sleep(1.5)

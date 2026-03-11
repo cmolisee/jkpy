@@ -139,6 +139,13 @@ warn_no_return=true
 strict_equality=true
 exclude=["pyproject.toml"]
 
+# Ignore mypy missing import error in CI
+# xlswriter intentionally removed its typings
+# unknown if/when they will be re-added
+[[tool.mypy.overrides]]
+module = ["xlsxwriter"]
+ignore_missing_imports = true
+
 [tool.pylint.messages_control] 
 disable=[ "C0111","C0103","R0903"] 
 
