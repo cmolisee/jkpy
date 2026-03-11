@@ -48,7 +48,7 @@ class Ansi:
     }
 
     @staticmethod
-    def fromCode(k: str) -> str | None:
+    def from_code(k: str) -> str | None:
         """Get the string representation of the hexidecimal escape sequence or the key itself."""
         return Ansi.KEYS.get(k) if k in Ansi.KEYS.keys() else k
 
@@ -58,7 +58,7 @@ class Ansi:
         return f"\x1b[{y}F"
 
     @staticmethod
-    def right(x: str) -> str:
+    def right(x: int) -> str:
         """Move cursor right 'x' columns"""
         return f"\x1b[{x}C"
 
@@ -118,7 +118,7 @@ class ProgressBar:
         """Run a coroutine while animating, then snap to 100%."""
         task = asyncio.create_task(self._animate())
         try:
-            return await coro
+            return await coro()
         finally:
             task.cancel()
             self._render(1.0)

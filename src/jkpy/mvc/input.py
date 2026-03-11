@@ -163,7 +163,7 @@ class InputController:
         self.view.render()
         while self.model.is_running:
             key = self.get_key()
-            self.handle_input(Ansi.fromCode(key))
+            self.handle_input(Ansi.from_code(key))
 
         print()
         return self.model.result

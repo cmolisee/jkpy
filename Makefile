@@ -75,6 +75,10 @@ clean: ## Remove all artifacts, cache, virtual environment, etc...
 	find . -type f -name '*.egg' -delete
 	find . -type d -name '*.egg-info' -exec rm -rf {} +
 	@printf "$(GREEN)>>> Cleanup complete$(NC)\n"
+clean-cache: ## Remove all cache
+	rm -rf .pytest_cache
+	rm -rf .mypy_cache
+	rm -rf .ruff_cache
 test: ## Run tests (all files with *_test.py)
 	@printf "$(CYAN)>>> Running tests...$(NC)\n"
 	$(VENV_PYTHON) -m pytest
