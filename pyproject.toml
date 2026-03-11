@@ -80,6 +80,7 @@ exclude_commit_patterns=[
 [tool.black]
 line-length=100
 target-version=["py39"]
+include='\.pyi?$'
 extend-exclude='''
 /(
     #directories
@@ -97,7 +98,6 @@ extend-exclude='''
 
 [tool.isort]
 profile="black"
-line-length=100
 extend_skip=["pyproject.toml"]
 
 [tool.ruff]
@@ -112,6 +112,10 @@ ignore=["E501"]
 [tool.ruff.lint.per-file-ignores]
 "__init__.py"=["F401"] # unused imports
 
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
 [tool.pytest.ini_options] 
 addopts=[ 
     "-ra",
@@ -122,7 +126,7 @@ addopts=[
 ]
 
 [tool.mypy] 
-python_version="3.9" 
+python_version="3.10" 
 warn_return_any=true
 warn_unused_configs=true
 disallow_untyped_defs=true
@@ -135,8 +139,8 @@ warn_no_return=true
 strict_equality=true
 exclude=["pyproject.toml"]
 
-[[tool.mypy.overrides]]
-disallow_untyped_defs=false
+# [[tool.mypy.overrides]]
+# disallow_untyped_defs=false
 
 [tool.pylint.messages_control] 
 disable=[ "C0111","C0103","R0903"] 

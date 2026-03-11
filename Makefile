@@ -88,6 +88,10 @@ lint: ## Run all linters (ruff)
 	@printf "$(CYAN)>>> Running linters...$(NC)\n"
 	$(VENV_PYTHON) -m ruff check .
 	@printf "$(GREEN)>>> Linting complete$(NC)\n"
+lint-fix: ## Run all linters and fix all auto-fixable problems (ruff)
+	@printf "$(CYAN)>>> Running linters...$(NC)\n"
+	$(VENV_PYTHON) -m ruff check . --fix
+	@printf "$(GREEN)>>> Linting complete$(NC)\n"
 format: ## Format code with black and isort
 	@printf "$(CYAN)>>> Formatting code...$(NC)\n"
 	$(VENV_PYTHON) -m black .
