@@ -17,11 +17,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.jkpy_semvar_token }}
+          token: ${{ secrets.JKPY_PAT }}
 
       - name: Set up python
         uses: actions/setup-python@v5
-        with: 
+        with:
           python-version: "3.x"
 
       - name: Install dependencies
@@ -36,7 +36,7 @@ jobs:
 
       - name: Semantic Release
         env:
-          GH_TOKEN: ${{ secrets.jkpy_semvar_token }}
+          GH_TOKEN: ${{ secrets.JKPY_PAT }}
         run: |
           semantic-release version
           semantic-release publish
