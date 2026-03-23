@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from datetime import datetime
+from typing import Any
 
 import polars as pl
 
@@ -83,7 +84,7 @@ class Normalize(Handler):
         model.data["data_frames"]["normalized"] = pl.DataFrame(rows)
         print(Ansi.GREEN + "Data has been filtered ✅\n" + Ansi.RESET)
 
-    def get_valid_done_date(self, model: MenuModel, changelog: list[object]) -> None | datetime:
+    def get_valid_done_date(self, model: MenuModel, changelog: Any) -> None | datetime:
         """
         Searches changelog with the following criteria:
             1. find the last block of status changes such that no status change
@@ -102,7 +103,7 @@ class Normalize(Handler):
         """
         transitions = []
 
-        for history in changelog.__getattribute__("histories"):
+        for history in changelog["histories"]:
             for item in history["items"]:
                 if item["field"] == "status":
                     transitions.append(

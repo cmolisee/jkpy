@@ -118,7 +118,7 @@ class ProgressBar:
         """Run a coroutine while animating, then snap to 100%."""
         task = asyncio.create_task(self._animate())
         try:
-            return await coro()
+            return await coro
         finally:
             task.cancel()
             self._render(1.0)
