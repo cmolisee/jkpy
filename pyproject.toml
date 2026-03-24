@@ -6,7 +6,7 @@ build-backend="setuptools.build_meta"
 name="jkpy"
 authors=[{name="Cody Molisee"}]
 description="Build KPI's from JIRA issues"
-version="1.0.1"
+version="1.0.2"
 requires-python=">=3.9"
 readme="README.md"
 license="MIT"
