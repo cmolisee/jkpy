@@ -68,10 +68,12 @@ build_command="python -m build"
 
 [tool.semantic_release.commit_parser_options]
 allowed_tags=["major", "breaking", "feat","fix","docs","style","refactor","test","wip","chore","ci"]
-minor_tags=["feat"]
+minor_tags=["feat", "refactor"]
 patch_tags=["fix", "ci", "docs", "style", "test", "chore"]
 # BREAKING CHANGE - in body will also trigger major version bump
 major_tabs=["major", "breaking"]
+ignore_merge_commits = true
+parse_squash_commits = true
 
 [tool.semantic_release.changelog]
 exclude_commit_patterns=[
