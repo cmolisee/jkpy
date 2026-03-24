@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.0.3 (2026-03-24)
+
+### Continuous Integration
+
+- Update semanti release commit parsing options.
+  ([`391d82c`](https://github.com/cmolisee/jkpy/commit/391d82c1fed74967d2c8369eccf696d7e2a8bcdc))
+
+
 ## v1.0.2 (2026-03-24)
 
 ### Chores
