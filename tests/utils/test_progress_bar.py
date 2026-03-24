@@ -20,7 +20,7 @@ class TestProgressBar:
 
     # @pytest.mark.asyncio
     async def test_run_and_animate(self, capsys: Any) -> None:
-        result = await ProgressBar(20, 0).run_with(test_coroutine)
+        result = await ProgressBar(20, 0).run_with(test_coroutine())
         captured = capsys.readouterr()
 
         assert result == 1
