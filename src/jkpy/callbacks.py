@@ -14,11 +14,11 @@ from jkpy.mvc.options import Options
 from jkpy.utils import Ansi
 
 
-def run_application(**kwargs: dict[Any, Any]) -> None:
+def run_application(**kwargs: Any) -> None:
     """Callback to run the primary handler chain of this program."""
     try:
-        model: MenuModel = kwargs["model"]  # type: ignore[assignment]
-        view: MenuView = kwargs["view"]  # type: ignore[assignment]
+        model: MenuModel = kwargs["model"]
+        view: MenuView = kwargs["view"]
         handler_chain = Handlers.create_chain()
 
         print()
@@ -32,10 +32,10 @@ def run_application(**kwargs: dict[Any, Any]) -> None:
         sys.exit(1)
 
 
-def show_configurations(**kwargs: dict[Any, Any]) -> None:
+def show_configurations(**kwargs: Any) -> None:
     """Callback to print the application configurations to the terminal"""
     try:
-        model: MenuModel = kwargs["model"]  # type: ignore[assignment]
+        model: MenuModel = kwargs["model"]
 
         print()
 
@@ -84,11 +84,11 @@ def show_configurations(**kwargs: dict[Any, Any]) -> None:
         sys.exit(1)
 
 
-def setter_prompt(**kwargs: dict[Any, Any]) -> None:
+def setter_prompt(**kwargs: Any) -> None:
     """Callback to prompt the user for setting a specific configuration"""
     try:
-        model: MenuModel = kwargs["model"]  # type: ignore[assignment]
-        key: str = kwargs["key"]  # type: ignore[assignment]
+        model: MenuModel = kwargs["model"]
+        key: str = kwargs["key"]
 
         response: Any = None
         if key in ["host", "path", "token"]:
@@ -96,11 +96,15 @@ def setter_prompt(**kwargs: dict[Any, Any]) -> None:
         elif key in ["members", "labels", "statuses", "teams", "ignore_labels"]:
             response = Input.text(f"Enter '{key}' value(s) separated by a comma ',': ")
             response = response.split(",") if response else None
-        else:
-            selector = key.replace("remove_", "")
-            response = Options.multiselect(
-                "Select values to remove:", model.get_configs()[selector]
-            )
+        elif key in [
+            "remove_labels",
+            "remove_members",
+            "remove_statuses",
+            "remove_teams",
+            "remove_ignore_labels",
+        ]:
+            key = key.replace("remove_", "")
+            response = Options.multiselect("Select values to remove:", model.get_configs()[key])
 
         if response is not None:
             model.set_configs({key: response})
@@ -113,10 +117,10 @@ def setter_prompt(**kwargs: dict[Any, Any]) -> None:
         sys.exit(1)
 
 
-def back(**kwargs: dict[Any, Any]) -> None:
+def back(**kwargs: Any) -> None:
     """Callback to return from the current submenu"""
     try:
-        model: MenuModel = kwargs["model"]  # type: ignore[assignment]
+        model: MenuModel = kwargs["model"]
         model.is_running = False
         return None
     except Exception:
@@ -126,7 +130,7 @@ def back(**kwargs: dict[Any, Any]) -> None:
         sys.exit(1)
 
 
-def edit_configurations(**kwargs: dict[Any, Any]) -> None:
+def edit_configurations(**kwargs: Any) -> None:
     """Callback to navigate to the configuration submenu."""
     try:
         options: list[str] = [
@@ -147,19 +151,19 @@ def edit_configurations(**kwargs: dict[Any, Any]) -> None:
         ]
 
         callbacks: dict[int, Any] = {
-            0: partial(setter_prompt, key="host"),  # type: ignore[arg-type]
-            1: partial(setter_prompt, key="labels"),  # type: ignore[arg-type]
-            2: partial(setter_prompt, key="members"),  # type: ignore[arg-type]
-            3: partial(setter_prompt, key="path"),  # type: ignore[arg-type]
-            4: partial(setter_prompt, key="statuses"),  # type: ignore[arg-type]
-            5: partial(setter_prompt, key="teams"),  # type: ignore[arg-type]
-            6: partial(setter_prompt, key="token"),  # type: ignore[arg-type]
-            7: partial(setter_prompt, key="ignore_labels"),  # type: ignore[arg-type]
-            8: partial(setter_prompt, key="remove_labels"),  # type: ignore[arg-type]
-            9: partial(setter_prompt, key="remove_members"),  # type: ignore[arg-type]
-            10: partial(setter_prompt, key="remove_statuses"),  # type: ignore[arg-type]
-            11: partial(setter_prompt, key="remove_teams"),  # type: ignore[arg-type]
-            12: partial(setter_prompt, key="remove_ignore_labels"),  # type: ignore[arg-type]
+            0: partial(setter_prompt, key="host"),
+            1: partial(setter_prompt, key="labels"),
+            2: partial(setter_prompt, key="members"),
+            3: partial(setter_prompt, key="path"),
+            4: partial(setter_prompt, key="statuses"),
+            5: partial(setter_prompt, key="teams"),
+            6: partial(setter_prompt, key="token"),
+            7: partial(setter_prompt, key="ignore_labels"),
+            8: partial(setter_prompt, key="remove_labels"),
+            9: partial(setter_prompt, key="remove_members"),
+            10: partial(setter_prompt, key="remove_statuses"),
+            11: partial(setter_prompt, key="remove_teams"),
+            12: partial(setter_prompt, key="remove_ignore_labels"),
             13: back,
         }
 
@@ -185,10 +189,10 @@ def edit_configurations(**kwargs: dict[Any, Any]) -> None:
     return None
 
 
-def exit_application(**kwargs: dict[Any, Any]) -> None:
+def exit_application(**kwargs: Any) -> None:
     """Callback to stop application execution and exit the application"""
     try:
-        model: MenuModel = kwargs["model"]  # type: ignore[assignment]
+        model: MenuModel = kwargs["model"]
         model.stop()
         return None
     except Exception:

@@ -55,7 +55,7 @@ class TestShowConfiguration:
 
         mock_stop_call.assert_called()
 
-    def test_show_configuration_exception(self, mocker: MockerFixture) -> None:
+    def test_show_configuration_exception(self) -> None:
         with pytest.raises(SystemExit) as excinfo:
             show_configurations()
 

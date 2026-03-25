@@ -42,7 +42,7 @@ def main() -> None:
     try:
         controller.run()
     except KeyboardInterrupt:
-        exit_application(model=model)  # type: ignore[arg-type]
+        exit_application(model=model)
 
 
 if __name__ == "__main__":
