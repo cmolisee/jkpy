@@ -2,6 +2,31 @@
 
 <!-- version list -->
 
+## v1.0.4 (2026-03-25)
+
+### Testing
+
+- Created tests for back()
+  ([`92f314a`](https://github.com/cmolisee/jkpy/commit/92f314a833a5b79a377294c8afbb2043255ae5bb))
+
+- Created tests for edit_configurations
+  ([`599fe09`](https://github.com/cmolisee/jkpy/commit/599fe097617e02d8e60c3ba4ab7766bc8d347cc0))
+
+- Created tests for exit_application. updated show_configurations tests to reach 100% coverage for
+  callbacks.
+  ([`d700790`](https://github.com/cmolisee/jkpy/commit/d7007905a83703da786370a2a8656fe950f31009))
+
+- Created tests for run_application(). Modify .gitignore.
+  ([`b56795b`](https://github.com/cmolisee/jkpy/commit/b56795ba9a5db0ce66f3498081b91794df0f199f))
+
+- Introduced tests for show_configurations.
+  ([`b6522ce`](https://github.com/cmolisee/jkpy/commit/b6522ceaa0f256674c2141f6b81fbaa22b541e49))
+
+- Updated ruff config to include eof newline. updated typing of **kwargs to Any and removed unused
+  type ignores. created tests for setter_prompt().
+  ([`785871d`](https://github.com/cmolisee/jkpy/commit/785871d2315a5987a022bc6919dfab5825906233))
+
+
 ## v1.0.3 (2026-03-24)
 
 ### Continuous Integration
