@@ -26,6 +26,7 @@ class Metrics(Handler):
                 [
                     self.total_issues(),
                     self.story_points(),
+                    self.average_story_points(),
                     self.time_tracking(),
                     self.enhancements(),
                     self.bugs(),
@@ -88,6 +89,9 @@ class Metrics(Handler):
 
     def story_points(self) -> IntoExpr:
         return pl.col("story_points").sum().alias("story_point_sum")
+
+    def average_story_points(self) -> IntoExpr:
+        return pl.col("story_points").mean().alias("story_point_average")
 
     def time_tracking(self) -> IntoExpr:
         return pl.col("time_tracking").sum().alias("time_tracking")

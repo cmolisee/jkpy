@@ -16,18 +16,6 @@ BLUE := \033[34m
 MAGENTA := \033[35m
 CYAN := \033[36m
 
-# email=""
-# token=""
-# path=""
-# members=""
-# teams=""
-# statuses=""
-# labels=""
-# ignore-labels=""
-# start=""
-# end=""
-# host=""
-
 .PHONY: help venv install
 
 .DEFAULT_GOAL := help
