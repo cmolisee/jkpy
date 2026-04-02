@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.1.0 (2026-04-02)
+
+### Features
+
+- Added average story points. removed commented variables from Makefile.
+  ([`ef9b4b9`](https://github.com/cmolisee/jkpy/commit/ef9b4b992290ccc7fcd98cd026d28a0d0bc176da))
+
+### Testing
+
+- Fixed datetime issue in show_configurations.
+  ([`834f809`](https://github.com/cmolisee/jkpy/commit/834f8094bff46db89aadc29780c426551fffa903))
+
+
 ## v1.0.4 (2026-03-25)
 
 ### Testing
