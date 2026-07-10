@@ -2,6 +2,20 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-07-10)
+
+### Features
+
+- Updated output handler to include normalized df. also added 'ERROR:' to catch output for more
+  visibility in terminal.
+  ([`135ef8c`](https://github.com/cmolisee/jkpy/commit/135ef8cdaeffdf382d9fb5b7921719521122662b))
+
+### Wip
+
+- Updated clean-cache make target.
+  ([`eff9c4b`](https://github.com/cmolisee/jkpy/commit/eff9c4b1bec0a8338553a25e4366cb4e9a50dc78))
+
+
 ## v1.1.0 (2026-04-02)
 
 ### Features
