@@ -50,7 +50,12 @@ class ExcelOutputHandler(Handler):
             try:
                 model.data["df_issues"].write_excel(workbook=workbook, worksheet="raw data")
             except Exception as e:
-                errors.append(f"{Ansi.YELLOW}>>> {e}{Ansi.RESET}")
+                errors.append(f"{Ansi.YELLOW}>>> ERROR: {e}{Ansi.RESET}")
+
+            try:
+                model.data["data_frames"]["normalized"].write_excel(workbook=workbook, worksheet="normalized data")
+            except Exception as e:
+                errors.append(f"{Ansi.YELLOW}>>> ERROR: {e}{Ansi.RESET}")
 
             for df in (
                 model.data["data_frames"]["result"]
@@ -62,7 +67,7 @@ class ExcelOutputHandler(Handler):
                 try:
                     df.write_excel(workbook=workbook, worksheet=month_name)
                 except Exception as e:
-                    errors.append(f"{Ansi.YELLOW}>>> {e}{Ansi.RESET}")
+                    errors.append(f"{Ansi.YELLOW}>>> ERROR: {e}{Ansi.RESET}")
 
         return errors
 
