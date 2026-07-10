@@ -67,6 +67,7 @@ clean-cache: ## Remove all cache
 	rm -rf .pytest_cache
 	rm -rf .mypy_cache
 	rm -rf .ruff_cache
+	find . -type d -name "__pycache__" -exec rm -rf {} +
 test: ## Run tests (all files with *_test.py)
 	@printf "$(CYAN)>>> Running tests...$(NC)\n"
 	$(VENV_PYTHON) -m pytest
